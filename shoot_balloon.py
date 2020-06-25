@@ -2,7 +2,7 @@ import numpy as np
 from numpy import linalg as la
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import matplotlib.patches as patches
 
 #data
 
@@ -57,10 +57,13 @@ def peak_xy(start_xyz, target_xyz, ran):
 
 
 def shoot(n_iter, cannon, balloon, ran):
-    plt.scatter(cannon[0], cannon[1])
-    plt.text(cannon[0], cannon[1], 'fire')
-    plt.scatter(balloon[0], balloon[1])
-    plt.text(balloon[0], balloon[1], 'balloon')
+    #plt.scatter(cannon[0], cannon[1])
+    #plt.text(cannon[0], cannon[1], 'fire')
+    #plt.scatter(balloon[0], balloon[1])
+    #plt.text(balloon[0], balloon[1], 'balloon')
+
+    fig1 = plt.figure()
+    ax1 = fig1.add_subplot(111)
 
     for i in range(n_iter):
         idland, xy_now, peak_z, theta, direc_now = peak_xy(cannon, balloon, ran)
@@ -81,8 +84,7 @@ def shoot(n_iter, cannon, balloon, ran):
         h_now = peak_z
 
         #포탄 경로 그리기 준비
-        x_values = [xy_now[0]]
-        y_values = [xy_now[1]]
+        scatter_pts = {'x_values' : [xy_now[0]], 'y_values' = [xy_now[1]]}
 
         total_move = 0
         while idx_now > 0:
@@ -122,16 +124,57 @@ def shoot(n_iter, cannon, balloon, ran):
             idx_now -=1
             h_now = wind_tbl.h[idx_now]
             
-            x_values.append(xy_now[0])
-            y_values.append(xy_now[1])
+            scatter_pts['x_values'].append(xy_now[0])
+            scatter_pts['y_values'].append(xy_now[1])
 
-        plt.scatter(xy_now[0], xy_now[1])
-        plt.plot(x_values, y_values) #꺾인 발사
+        #plt.scatter(xy_now[0], xy_now[1])
+        #plt.plot(x_values, y_values) #꺾인 발사
     #print('실제로 총 {}만큼 전진'.format(total_move))
 
-    plt.scatter(idland[0], idland[1], s = 500) #이상적인 발사
+    ax1.plot('x_values', 'y_values', data=pd.DataFrame(scatter_pts), linestyle='none', marker='o') #scatterplot
+    #plt.scatter(idland[0], idland[1], s = 500) #이상적인 발사
     
 
 shoot( 100,  np.array([0,0,1000]), np.array([np.sqrt(2) * 4000, 4000, 4000]), 8000)
 shoot(100, np.array([-1000,1000,500]), np.array([-3000,-3000,1200]), 5000)
 plt.show()
+
+
+
+# adding a rectangle, a circle
+
+
+
+
+
+
+
+
+cir = make_circle(zip(data.x, data.y))
+
+# (0) scatter plot
+
+
+
+
+# (2) adding a circle
+
+ax1.add_patch(
+
+    patches.Circle(
+
+        (cir[0], cir[1]), # (x, y)
+
+        cir[2], # radius
+
+        alpha=0.2, 
+
+        facecolor="red", 
+
+        edgecolor="black", 
+
+        linewidth=2, 
+
+        linestyle='solid'))
+
+
