@@ -27,9 +27,10 @@ def cos_sim(v1, v2):
 def vec2ang(v):
     return np.arctan2(v[1], v[0])
 
-def peak_xy(start_xy, target_xyz, ran):
+def peak_xy(start_xyz, target_xyz, ran):
+    start_xy = start_xyz[:2]
     target_xy = target_xyz[:2]
-    h = target_xyz[2]
+    h = target_xyz[2] - start_xyz[2]
 
     d1 = la.norm(start_xy - target_xy)
     s = np.sqrt(d1**2 + h**2)
@@ -45,12 +46,13 @@ def peak_xy(start_xy, target_xyz, ran):
     direc = xy_shftd / la.norm(xy_shftd)
 
     ideal_landing = peak_xy + peak_xy_shftd
-    #print('바람이 없을 시 예상 착륙점: {}\n'.format(ideal_landing))
+    print('바람이 없을 시 예상 착륙점: {}'.format(ideal_landing))
+    print('총 이동 거리: {}에서 0까지 내려가는 동안 {}\n'.format(peak_z, peak_z * np.tan(theta)))
     return ideal_landing, peak_xy, peak_z, theta, direc
 
 
 
-cannon = np.array([0,0])
+cannon = np.array([0,0,1000])
 plt.scatter(cannon[0], cannon[1])
 plt.text(cannon[0], cannon[1], 'fire')
 
@@ -60,34 +62,36 @@ plt.scatter(balloon[0], balloon[1])
 plt.text(balloon[0], balloon[1], 'balloon')
 print(balloon)
 
-for i in range(10):
-    idland, xy_now, h, theta, direc_now = peak_xy(cannon, balloon, 8000)
+for i in range(1):
+    idland, xy_now, peak_z, theta, direc_now = peak_xy(cannon, balloon, 8000)
+
 
     if i == 1:
         print('peak', xy_now)
         plt.scatter(xy_now[0], xy_now[1])
         plt.text(xy_now[0], xy_now[1], 'peak')
-#plt.plot( [xy_now[0], idland[0]], [xy_now[1], idland[1]])
+    plt.plot( [xy_now[0], idland[0]], [xy_now[1], idland[1]])
 
 # shoot
-    idx_now = (wind_tbl.h >= h).tolist().index(True)
-    h_now = wind_tbl.h[idx_now]
-#t.setheading(vec2ang(direc_now))
-
-#x_values = [xy_now[0]]
-#y_values = [xy_now[1]]
+    idx_now = (wind_tbl.h >= peak_z).tolist().index(True)
+    h_now = peak_z
 
 
+    x_values = [xy_now[0]]
+    y_values = [xy_now[1]]
+
+    total_move = 0
     while idx_now > 0:
         h_down = h_now - wind_tbl.h[idx_now - 1]
-        #print('고도 {} -> {}. {}만큼 하강'.format(h_now, wind_tbl.h[idx_now - 1], h_down))
+        print('고도 {} -> {}. {}만큼 하강하는 동안'.format(h_now, wind_tbl.h[idx_now - 1], h_down))
 
         one_step = h_down * np.tan(theta)
-        #print('x,y좌표 기준으로 {}만큼 전진'.format(one_step))
+        total_move += one_step
+        print('x,y좌표 기준으로 {}만큼 전진'.format(one_step))
 
         wind_vec = np.array(wind_tbl.vec[idx_now])
-        #print('고도 {}에서의 바람 방향: {}'.format(wind_tbl.h[idx_now], wind_vec))
-        #print('원래 전진 방향: {}'.format(direc_now))
+        print('고도 {}에서의 바람 방향: {}'.format(wind_tbl.h[idx_now], wind_vec))
+        print('원래 전진 방향: {}'.format(direc_now))
         
         cossim = cos_sim(direc_now, wind_vec)
         if abs(cossim) == 1:
@@ -97,19 +101,20 @@ for i in range(10):
             #print(w)
             direc_now = (1-w) * direc_now + w * wind_vec.astype('float64')
             direc_now =  (direc_now ) / la.norm(direc_now)
-            #print('바람에 의해 수정된 방향: {}'.format(direc_now))
+            print('바람에 의해 수정된 방향: {}'.format(direc_now))
         xy_now = xy_now + direc_now * one_step
-        #print('{},{}에 도착\n'.format(xy_now, wind_tbl.h[idx_now - 1]))
+        print('{},{}에 도착\n'.format(xy_now, wind_tbl.h[idx_now - 1]))
         
         idx_now -=1
         h_now = wind_tbl.h[idx_now]
         
-        #x_values.append(xy_now[0])
-        #y_values.append(xy_now[1])
+        x_values.append(xy_now[0])
+        y_values.append(xy_now[1])
 
     plt.scatter(xy_now[0], xy_now[1])
 
-#plt.plot(x_values, y_values)
-plt.scatter(idland[0], idland[1], s = 500)
+print('실제로 총 {}만큼 전진'.format(total_move))
+plt.plot(x_values, y_values) #꺾인 발사
+plt.scatter(idland[0], idland[1], s = 500) #이상적인 발사
 plt.show()
 
