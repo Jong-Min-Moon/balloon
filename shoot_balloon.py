@@ -3,11 +3,12 @@ from numpy import linalg as la
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-
+from itertools import permutations
+import smallestenclosingcircle as sc
 #data
 
 wind_dic = {'h': [0,200,500,1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000],
-            'dir':[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+            'dir':[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
             'vel':[1,2,1,3,4,5,1,7,5,3,9,10,4,5,6,2]
 }
 wind_tbl = pd.DataFrame(wind_dic)
@@ -27,6 +28,35 @@ def cos_sim(v1, v2):
 
 def vec2ang(v):
     return np.arctan2(v[1], v[0])
+
+cannons = pd.DataFrame({'x': [240,1000,2000], 'y':[140, 150, 200], 'z' : [50, 25, 130]})
+balloons = pd.DataFrame({'x': [250, 1100, 2300], 'y':[1300, 1100, 1600], 'z':[1500,1000,2000]})
+
+
+
+def allocate(cannons, balloons):
+    n = len(balloons)
+    dist_mat = np.zeros((n, n))
+    
+    for i in cannons.index:
+        for j in balloons.index:
+            dist_mat[i,j] = la.norm( cannons.iloc[i, :] - balloons.iloc[j, :] )
+    
+    print(dist_mat)
+    
+    sum_min = np.inf
+    permu_min = 0
+    for permu in permutations(range(n), n):
+        sum = 0
+        for tup in (zip(range(n), permu)):
+            sum += dist_mat[tup]
+        print(permu, sum)
+        if sum < sum_min:
+            permu_min = permu
+            sum_min = sum
+
+    return permu_min, sum_min
+
 
 def peak_xy(start_xyz, target_xyz, ran):
     start_xy = start_xyz[:2]
@@ -57,35 +87,31 @@ def peak_xy(start_xyz, target_xyz, ran):
 
 
 def shoot(n_iter, cannon, balloon, ran):
-    #plt.scatter(cannon[0], cannon[1])
-    #plt.text(cannon[0], cannon[1], 'fire')
-    #plt.scatter(balloon[0], balloon[1])
-    #plt.text(balloon[0], balloon[1], 'balloon')
+    plt.scatter(cannon[0], cannon[1])
+    plt.text(cannon[0], cannon[1], 'fire')
+    plt.scatter(balloon[0], balloon[1])
+    plt.text(balloon[0], balloon[1], 'balloon')
 
-    fig1 = plt.figure()
-    ax1 = fig1.add_subplot(111)
-
+    x_values = []; y_values = []
     for i in range(n_iter):
         idland, xy_now, peak_z, theta, direc_now = peak_xy(cannon, balloon, ran)
 
         if i == 0:
-            print('peak', xy_now)
-            plt.scatter(xy_now[0], xy_now[1])
-            plt.text(xy_now[0], xy_now[1], 'peak')
-
+            plt.scatter(xy_now[0], xy_now[1]); plt.text(xy_now[0], xy_now[1], 'peak') #최고점
+            plt.scatter(idland[0], idland[1], s = 300); plt.text(idland[0], idland[1], 'ideal landing') #최고점
             plt.plot( [cannon[0], balloon[0]], [cannon[1], balloon[1]]) #cannon to balloon
-            plt.plot( [balloon[0], xy_now[0]], [balloon[1], xy_now[1]])
-            plt.plot( [xy_now[0], idland[0]], [xy_now[1], idland[1]]) #peak to ideal landing
+            plt.plot( [balloon[0], xy_now[0]], [balloon[1], xy_now[1]]) #baloon to peak
+            plt.plot( [xy_now[0], idland[0]], [xy_now[1], idland[1]], linestyle = '--') #peak to ideal landing
         
 
-    # shoot
+        # shoot
         #현재 고도보다 바로 위에 있는 테이블 값의 풍향을 사용할 것임
         idx_now = (wind_tbl.h >= peak_z).tolist().index(True)
         h_now = peak_z
 
         #포탄 경로 그리기 준비
-        scatter_pts = {'x_values' : [xy_now[0]], 'y_values' = [xy_now[1]]}
-
+        
+        x_shootline = []; y_shootline = []
         total_move = 0
         while idx_now > 0:
             h_down = h_now - wind_tbl.h[idx_now - 1] #수직 하강 거리
@@ -119,62 +145,51 @@ def shoot(n_iter, cannon, balloon, ran):
 
             #포탄의 전진.
             xy_now = xy_now + direc_now * one_step
+            x_shootline.append(xy_now[0]); y_shootline.append(xy_now[1]) 
             #print('{},{}에 도착\n'.format(xy_now, wind_tbl.h[idx_now - 1]))
             
             idx_now -=1
             h_now = wind_tbl.h[idx_now]
-            
-            scatter_pts['x_values'].append(xy_now[0])
-            scatter_pts['y_values'].append(xy_now[1])
 
+        plt.plot(x_shootline, y_shootline) #꺾인 발사
+        x_values.append(xy_now[0])
+        y_values.append(xy_now[1])
+
+        
         #plt.scatter(xy_now[0], xy_now[1])
-        #plt.plot(x_values, y_values) #꺾인 발사
+        
     #print('실제로 총 {}만큼 전진'.format(total_move))
 
-    ax1.plot('x_values', 'y_values', data=pd.DataFrame(scatter_pts), linestyle='none', marker='o') #scatterplot
+    ax1.plot('xval', 'yval', data = pd.DataFrame({'xval': x_values, 'yval': y_values}), linestyle='none', markersize = 5) #scatterplot
+    cir = sc.make_circle(zip(x_values, y_values))
+    ax1.add_patch( patches.Circle( (cir[0], cir[1]), # (x, y)
+                                            cir[2], # radius
+        alpha=0.2, 
+        facecolor="red", 
+        edgecolor="black", 
+        linewidth=2, 
+        linestyle='solid'))
     #plt.scatter(idland[0], idland[1], s = 500) #이상적인 발사
-    
 
-shoot( 100,  np.array([0,0,1000]), np.array([np.sqrt(2) * 4000, 4000, 4000]), 8000)
-shoot(100, np.array([-1000,1000,500]), np.array([-3000,-3000,1200]), 5000)
+
+cannons = pd.DataFrame({'x': [4100,5000,6000], 'y':[1100, 1150, 1200], 'z' : [50, 25, 130]})
+balloons = pd.DataFrame({'x': [4250, 5100, 6300], 'y':[2300, 2100, 2600], 'z':[1500,1000,2000]})
+ranges = pd.DataFrame({'ran': [4000, 4000, 4000]})
+
+
+
+fig1 = plt.figure()
+ax1 = fig1.add_subplot(111)
+
+per, summ = allocate(cannons, balloons)
+for i, comb in enumerate(zip(range(len(cannons)), per)):
+    shoot( 10,  np.array(cannons.iloc[comb[0], :]), np.array(balloons.iloc[comb[1], :]), ranges.iloc[i,0])
+
+
+img = plt.imread("map.png")
+ax1.imshow(img, extent=[0, 8000, 0, 8000])
 plt.show()
 
 
-
-# adding a rectangle, a circle
-
-
-
-
-
-
-
-
-cir = make_circle(zip(data.x, data.y))
-
-# (0) scatter plot
-
-
-
-
-# (2) adding a circle
-
-ax1.add_patch(
-
-    patches.Circle(
-
-        (cir[0], cir[1]), # (x, y)
-
-        cir[2], # radius
-
-        alpha=0.2, 
-
-        facecolor="red", 
-
-        edgecolor="black", 
-
-        linewidth=2, 
-
-        linestyle='solid'))
 
 
