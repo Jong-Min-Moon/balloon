@@ -5,15 +5,23 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import shoot_balloon as sb
 import pandas as pd
+import numpy as np
 
-
-cannons = pd.DataFrame({'x': [7100,8000,9000], 'y':[1100, 1150, 1200], 'z' : [50, 25, 130]})
-balloons = pd.DataFrame({'x': [7250, 8100, 9300], 'y':[2300, 2100, 2600], 'z':[1500,1000,2000]})
-ranges = pd.DataFrame({'ran': [4000, 4000, 4000]})
 
 n_cannons = 3
 n_balloons = 3
 n_winds = 10
+h_min = 0
+h_max = 10000
+winds = np.linspace(h_min, h_max, num = n_winds + 1)
+
+
+
+#cannons = pd.DataFrame({'x': [7100,8000,9000], 'y':[1100, 1150, 1200], 'z' : [50, 25, 130]})
+#balloons = pd.DataFrame({'x': [7250, 8100, 9300], 'y':[2300, 2100, 2600], 'z':[1500,1000,2000]})
+#ranges = pd.DataFrame({'ran': [4000, 4000, 4000]})
+
+
 class MyWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -23,6 +31,10 @@ class MyWindow(QWidget):
         self.setGeometry(600, 200, 1200, 600)
         self.setWindowTitle("PyChart Viewer v0.1")
         self.setWindowIcon(QIcon('icon.png'))
+        
+        #initialize data matrix
+        self.cannons = np.zeros((n_cannons, 3))
+        self.balloons = np.zeros((n_balloons, 3))
 
         ############################################################
         self.cannon_coord_label = QLabel('좌표')
@@ -169,6 +181,18 @@ class MyWindow(QWidget):
         img = plt.imread("map.png")
         self.ax.imshow(img, extent=[0, 8000, 0, 5000])   
         self.canvas.draw()
+
+
+
+
+    def lineEditChanged(self, line_name, i, j, mat):
+        try:
+            exec('input_val = int(self.{}}.text())'.format(line_name))
+            mat[i,j] = input_val
+        except:
+            QMessageBox.about(self, "message", "정수만 입력하세요.")
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MyWindow()
