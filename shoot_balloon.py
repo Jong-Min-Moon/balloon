@@ -86,22 +86,22 @@ def peak_xy(start_xyz, target_xyz, ran):
 
 
 
-def shoot(n_iter, cannon, balloon, ran):
-    plt.scatter(cannon[0], cannon[1])
-    plt.text(cannon[0], cannon[1], 'fire')
-    plt.scatter(balloon[0], balloon[1])
-    plt.text(balloon[0], balloon[1], 'balloon')
+def shoot(n_iter, cannon, balloon, ran, ax):
+    ax.scatter(cannon[0], cannon[1])
+    ax.text(cannon[0], cannon[1], 'fire')
+    ax.scatter(balloon[0], balloon[1])
+    ax.text(balloon[0], balloon[1], 'balloon')
 
     x_values = []; y_values = []
     for i in range(n_iter):
         idland, xy_now, peak_z, theta, direc_now = peak_xy(cannon, balloon, ran)
 
         if i == 0:
-            plt.scatter(xy_now[0], xy_now[1]); plt.text(xy_now[0], xy_now[1], 'peak') #최고점
-            plt.scatter(idland[0], idland[1], s = 35); plt.text(idland[0], idland[1], 'ideal landing') #최고점
-            plt.plot( [cannon[0], balloon[0]], [cannon[1], balloon[1]]) #cannon to balloon
-            plt.plot( [balloon[0], xy_now[0]], [balloon[1], xy_now[1]]) #baloon to peak
-            plt.plot( [xy_now[0], idland[0]], [xy_now[1], idland[1]], linestyle = '--') #peak to ideal landing
+            ax.scatter(xy_now[0], xy_now[1]); ax.text(xy_now[0], xy_now[1], 'peak') #최고점
+            ax.scatter(idland[0], idland[1], s = 35); ax.text(idland[0], idland[1], 'ideal landing') #최고점
+            ax.plot( [cannon[0], balloon[0]], [cannon[1], balloon[1]]) #cannon to balloon
+            ax.plot( [balloon[0], xy_now[0]], [balloon[1], xy_now[1]]) #baloon to peak
+            ax.plot( [xy_now[0], idland[0]], [xy_now[1], idland[1]], linestyle = '--') #peak to ideal landing
         
 
         # shoot
@@ -156,13 +156,13 @@ def shoot(n_iter, cannon, balloon, ran):
         y_values.append(xy_now[1])
 
         
-        plt.scatter(xy_now[0], xy_now[1], s = 5)
+        ax.scatter(xy_now[0], xy_now[1], s = 5)
         
     #print('실제로 총 {}만큼 전진'.format(total_move))
 
-    plt.plot('xval', 'yval', data = pd.DataFrame({'xval': x_values, 'yval': y_values}), linestyle='none', markersize = 20) #scatterplot
+    ax.plot('xval', 'yval', data = pd.DataFrame({'xval': x_values, 'yval': y_values}), linestyle='none', markersize = 20) #scatterplot
     cir = sc.make_circle(zip(x_values, y_values))
-    ax1.add_patch( patches.Circle( (cir[0], cir[1]), # (x, y)
+    ax.add_patch( patches.Circle( (cir[0], cir[1]), # (x, y)
                                             cir[2], # radius
         alpha=0.2, 
         facecolor="red", 
@@ -179,17 +179,16 @@ ranges = pd.DataFrame({'ran': [3000, 2000, 2000]})
 
 
 
+def drawplot(n_iter, cannons, balloons, ax):
+    per, summ = allocate(cannons, balloons)
+    for i, comb in enumerate(zip(range(len(cannons)), per)):
+        shoot( n_iter,  np.array(cannons.iloc[comb[0], :]), np.array(balloons.iloc[comb[1], :]), ranges.iloc[i,0], ax)
 
-fig1 = plt.figure()
-ax1 = fig1.add_subplot(111)
-
-per, summ = allocate(cannons, balloons)
-for i, comb in enumerate(zip(range(len(cannons)), per)):
-    shoot( 10,  np.array(cannons.iloc[comb[0], :]), np.array(balloons.iloc[comb[1], :]), ranges.iloc[i,0])
-
-
-img = plt.imread("map.png")
-ax1.imshow(img, extent=[0, 8000, 0, 5000])
-plt.axis('off')
+# fig1, ax1 = plt.subplots()
+# drawplot(10, cannons, balloons, ax1)
+# img = plt.imread("map.png")
+# ax1.imshow(img, extent=[0, 8000, 0, 5000])
+# plt.show()
+#plt.axis('off')
 #plt.show()
-plt.savefig('balloon_map.png', dpi=180, bbox_inches='tight')
+#fig1.savefig('balloon_map.png', dpi=180, bbox_inches='tight')
