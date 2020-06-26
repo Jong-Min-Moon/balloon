@@ -8,7 +8,7 @@ import smallestenclosingcircle as sc
 #data
 
 wind_dic = {'h': [0,200,500,1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000],
-            'dir':[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+            'dir':[1,2,4,5,6,7,8,1,2,3,4,5,6,7,8,2],
             'vel':[1,2,1,3,4,5,1,7,5,3,9,10,4,5,6,2]
 }
 wind_tbl = pd.DataFrame(wind_dic)
@@ -98,7 +98,7 @@ def shoot(n_iter, cannon, balloon, ran):
 
         if i == 0:
             plt.scatter(xy_now[0], xy_now[1]); plt.text(xy_now[0], xy_now[1], 'peak') #최고점
-            plt.scatter(idland[0], idland[1], s = 300); plt.text(idland[0], idland[1], 'ideal landing') #최고점
+            plt.scatter(idland[0], idland[1], s = 35); plt.text(idland[0], idland[1], 'ideal landing') #최고점
             plt.plot( [cannon[0], balloon[0]], [cannon[1], balloon[1]]) #cannon to balloon
             plt.plot( [balloon[0], xy_now[0]], [balloon[1], xy_now[1]]) #baloon to peak
             plt.plot( [xy_now[0], idland[0]], [xy_now[1], idland[1]], linestyle = '--') #peak to ideal landing
@@ -151,16 +151,16 @@ def shoot(n_iter, cannon, balloon, ran):
             idx_now -=1
             h_now = wind_tbl.h[idx_now]
 
-        plt.plot(x_shootline, y_shootline) #꺾인 발사
+        #plt.plot(x_shootline, y_shootline) #꺾인 발사
         x_values.append(xy_now[0])
         y_values.append(xy_now[1])
 
         
-        #plt.scatter(xy_now[0], xy_now[1])
+        plt.scatter(xy_now[0], xy_now[1], s = 5)
         
     #print('실제로 총 {}만큼 전진'.format(total_move))
 
-    ax1.plot('xval', 'yval', data = pd.DataFrame({'xval': x_values, 'yval': y_values}), linestyle='none', markersize = 5) #scatterplot
+    plt.plot('xval', 'yval', data = pd.DataFrame({'xval': x_values, 'yval': y_values}), linestyle='none', markersize = 20) #scatterplot
     cir = sc.make_circle(zip(x_values, y_values))
     ax1.add_patch( patches.Circle( (cir[0], cir[1]), # (x, y)
                                             cir[2], # radius
@@ -172,9 +172,11 @@ def shoot(n_iter, cannon, balloon, ran):
     #plt.scatter(idland[0], idland[1], s = 500) #이상적인 발사
 
 
-cannons = pd.DataFrame({'x': [4100,5000,6000], 'y':[1100, 1150, 1200], 'z' : [50, 25, 130]})
-balloons = pd.DataFrame({'x': [4250, 5100, 6300], 'y':[2300, 2100, 2600], 'z':[1500,1000,2000]})
-ranges = pd.DataFrame({'ran': [4000, 4000, 4000]})
+cannons = pd.DataFrame({'x': [3250, 6100, 8030], 'y':[2300, 3300, 3600], 'z':[1500,1000,2000]})
+
+balloons = pd.DataFrame({'x': [3100,6000,8000], 'y':[1100, 2150, 2200], 'z' : [50, 25, 130]})
+ranges = pd.DataFrame({'ran': [3000, 2000, 2000]})
+
 
 
 
@@ -187,9 +189,7 @@ for i, comb in enumerate(zip(range(len(cannons)), per)):
 
 
 img = plt.imread("map.png")
-ax1.imshow(img, extent=[0, 8000, 0, 8000])
-plt.show()
-
-
-
-
+ax1.imshow(img, extent=[0, 8000, 0, 5000])
+plt.axis('off')
+#plt.show()
+plt.savefig('balloon_map.png', dpi=180, bbox_inches='tight')
