@@ -33,23 +33,22 @@ class MyWindow(QWidget):
         self.setWindowIcon(QIcon('icon.png'))
         
         #initialize data matrix
-        self.cannons = np.zeros((n_cannons, 3))
-        self.balloons = np.zeros((n_balloons, 3))
+        self.n_dic = {'cannon_x':n_cannons, 'cannon_y':n_cannons, 'cannon_z':n_cannons, 'balloon_x':n_balloons, 'balloon_y':n_balloons, 'balloon_z':n_balloons}
+        self.cannon = pd.DataFrame(np.zeros((n_cannons, 3)), columns = ['cannon_x', 'cannon_y', 'cannon_z'])
+        self.balloon = pd.DataFrame(np.zeros((n_balloons, 3)), columns = ['balloon_x', 'balloon_z', 'balloon_z'])
+        self.int_only = QIntValidator(0,99999,self)
+        ############################################################
+        self.cannon_x_label = QLabel('좌표')    
+        self.cannon_z_label = QLabel('높이')
+        self.balloon_x_label = QLabel('좌표')
+        self.balloon_z_label = QLabel('높이')
 
-        ############################################################
-        self.cannon_coord_label = QLabel('좌표')
-        for i in range(n_cannons):
-            exec('self.cannon_coord_{} = QLineEdit()'.format(i))
-        self.cannon_height_label = QLabel('높이')
-        for i in range(n_cannons):
-            exec('self.cannon_height_{} = QLineEdit()'.format(i))
-        ############################################################
-        self.balloon_coord_label = QLabel('좌표')
-        for i in range(n_balloons):
-            exec('self.balloon_coord_{} = QLineEdit()'.format(i))
-        self.balloon_height_label = QLabel('높이')
-        for i in range(n_balloons):
-            exec('self.balloon_height_{} = QLineEdit()'.format(i))
+        for obj_name in self.n_dic:
+            for i in range(self.n_dic[obj_name]):
+                exec('self.{}_{} = QLineEdit()'.format(obj_name, i))
+                exec('self.{}_{}.setValidator(self.int_only)'.format(obj_name, i))
+                #exec('self.{}_{}.textChanged.connect(lambda: self.lineEditChanged("{}_{}", {}, {} ))'.format(obj_name, i, obj_name, i, i, obj_name  ))
+        self.cannon_x_0.textChanged.connect(lambda: self.lineEditChanged(self.cannon_x_0, 0, 'cannon_x', self.cannon ))
         ############################################################
         self.height_label = QLabel('고도')
         for i in range(n_winds):
@@ -64,6 +63,8 @@ class MyWindow(QWidget):
         ############################################################
         self.pushButton = QPushButton("차트그리기")
         self.pushButton.clicked.connect(self.pushButtonClicked)
+
+        
 
         self.fig, self.ax = plt.subplots()
         self.canvas = FigureCanvas(self.fig)
@@ -87,17 +88,23 @@ class MyWindow(QWidget):
         R1box = QHBoxLayout()
 
         R1box_1 = QVBoxLayout()
-        R1box_1.addWidget(self.cannon_coord_label)
+        R1box_1.addWidget(self.cannon_x_label)
         for i in range(n_cannons):
-            exec('R1box_1.addWidget(self.cannon_coord_{})'.format(i))
-    
+            exec('R1box_1.addWidget(self.cannon_x_{})'.format(i))
+
         R1box_2 = QVBoxLayout()
-        R1box_2.addWidget(self.cannon_height_label)
+        R1box_2.addWidget(self.cannon_x_label)
         for i in range(n_cannons):
-            exec('R1box_2.addWidget(self.cannon_height_{})'.format(i))
+            exec('R1box_2.addWidget(self.cannon_y_{})'.format(i))
+
+        R1box_3 = QVBoxLayout()
+        R1box_3.addWidget(self.cannon_z_label)
+        for i in range(n_cannons):
+            exec('R1box_3.addWidget(self.cannon_z_{})'.format(i))
         
         R1box.addLayout(R1box_1)
         R1box.addLayout(R1box_2)
+        R1box.addLayout(R1box_3)
         R1.setLayout(R1box)
         
         
@@ -107,14 +114,14 @@ class MyWindow(QWidget):
         R2box = QHBoxLayout()
 
         R2box_1 = QVBoxLayout()
-        R2box_1.addWidget(self.balloon_coord_label)
+        R2box_1.addWidget(self.balloon_x_label)
         for i in range(n_balloons):
-            exec('R2box_1.addWidget(self.balloon_coord_{})'.format(i))
+            exec('R2box_1.addWidget(self.balloon_x_{})'.format(i))
     
         R2box_2 = QVBoxLayout()
-        R2box_2.addWidget(self.balloon_height_label)
+        R2box_2.addWidget(self.balloon_z_label)
         for i in range(n_balloons):
-            exec('R2box_2.addWidget(self.balloon_height_{})'.format(i))
+            exec('R2box_2.addWidget(self.balloon_z_{})'.format(i))
         
         R2box.addLayout(R2box_1)
         R2box.addLayout(R2box_2)
@@ -177,7 +184,7 @@ class MyWindow(QWidget):
 
     def pushButtonClicked(self):
 
-        sb.drawplot(10, cannons, balloons, self.ax)
+        sb.drawplot(10, self.cannons, self.balloons, self.ax)
         img = plt.imread("map.png")
         self.ax.imshow(img, extent=[0, 8000, 0, 5000])   
         self.canvas.draw()
@@ -186,11 +193,10 @@ class MyWindow(QWidget):
 
 
     def lineEditChanged(self, line_name, i, j, mat):
-        try:
-            exec('input_val = int(self.{}}.text())'.format(line_name))
-            mat[i,j] = input_val
-        except:
-            QMessageBox.about(self, "message", "정수만 입력하세요.")
+        input_val = line_name.text()
+        mat.loc[i,j] = input_val
+        print(mat)
+      
 
 
 if __name__ == "__main__":
