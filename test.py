@@ -8,18 +8,19 @@ import pandas as pd
 import numpy as np
 
 
-n_cannons = 3
-n_balloons = 3
-n_winds = 10
+n_cannons = 2
+n_balloons = 2
+n_winds = 5
 h_min = 0
 h_max = 10000
 winds = np.linspace(h_min, h_max, num = n_winds + 1)
+winds_idx = zip(winds[:-1].astype(int), winds[1:].astype(int))
 
 
 
 #cannons = pd.DataFrame({'x': [7100,8000,9000], 'y':[1100, 1150, 1200], 'z' : [50, 25, 130]})
 #balloons = pd.DataFrame({'x': [7250, 8100, 9300], 'y':[2300, 2100, 2600], 'z':[1500,1000,2000]})
-#ranges = pd.DataFrame({'ran': [4000, 4000, 4000]})
+ranges = pd.DataFrame({'ran': [4000, 4000, 4000]})
 
 
 class MyWindow(QWidget):
@@ -37,9 +38,18 @@ class MyWindow(QWidget):
         self.data = {}
         self.data['cannon'] = pd.DataFrame(np.zeros((n_cannons, 3)), columns = ['cannon_x', 'cannon_y', 'cannon_z'])
         self.data['balloon'] = pd.DataFrame(np.zeros((n_balloons, 3)), columns = ['balloon_x', 'balloon_y', 'balloon_z'])
+        self.data['wind'] = pd.DataFrame(np.zeros((n_winds, 2)), index =winds_idx,  columns = ['wind_dir', 'wind_vel'])
+        
+        self.wind_dir_only = QIntValidator(0, 7, self)
         self.int_only = QIntValidator(0,99999,self)
-        ############################################################
-          
+        
+        
+        #initialize plt plot
+        self.fig, self.ax = plt.subplots()
+        self.canvas = FigureCanvas(self.fig)
+       
+        
+        #대포와 풍선
        
         self.balloon_x_label = QLabel('좌표')
         self.balloon_z_label = QLabel('높이')
@@ -57,29 +67,43 @@ class MyWindow(QWidget):
             mat = self.data[inputs[0]]
             print(i, j)
             self.cannon_balloon_list[widget].textChanged.connect(lambda a = widget, this_widget = self.cannon_balloon_list[widget], this_i = i, this_j = j, this_mat = mat: self.lineEditChanged(this_widget, this_i, this_j, this_mat ))
-            #widget.textChanged.connect(lambda this_widget = widget: print(this_widget))
-        #dir(cannon_balloon_list[0])
+          
         
-        #self.cannon_x_0.textChanged.connect(lambda: self.lineEditChanged(self.cannon_x_0, 0, 'cannon_x', self.cannon ))
-        ############################################################
-        self.height_label = QLabel('고도')
-        for i in range(n_winds):
-            exec('self.height_label_{} = QLabel("미터")'.format(i))
         
+
+        #바람
+        
+        self.height_label = QLabel('고도(m)')
+        for i , idx in enumerate(self.data['wind'].index):
+            exec('self.height_label_{} = QLabel("{}-{}")'.format(i, idx[0], idx[1]))
+        
+        self.wind_dir_list = {}
         self.wind_dir_label = QLabel('풍향')
         for i in range(n_winds):
             exec('self.wind_dir_{} = QLineEdit()'.format(i))
+            exec("self.wind_dir_list['self.wind_dir_{}'] = self.wind_dir_{}".format(i,i))
+        
+        for widget in self.wind_dir_list:
+            inputs = widget.replace('self.', '').split('_')
+            i = int(inputs[2])
+            mat = self.data[inputs[0]]
+            self.wind_dir_list[widget].textChanged.connect(lambda a = widget, this_widget = self.wind_dir_list[widget], this_i = i,  this_mat = mat: self.lineEditChanged2(this_widget, this_i, 0, this_mat ))
+          
+
+        self.wind_vel_list = {}
         self.wind_vel_label = QLabel('풍속')
         for i in range(n_winds):
             exec('self.wind_vel_{} = QLineEdit()'.format(i))
-        ############################################################
+            exec("self.wind_vel_list['self.wind_vel_{}'] = self.wind_vel_{}".format(i,i))
+
+
+
         self.pushButton = QPushButton("차트그리기")
         self.pushButton.clicked.connect(self.pushButtonClicked)
 
         
 
-        self.fig, self.ax = plt.subplots()
-        self.canvas = FigureCanvas(self.fig)
+        
 
 
 
@@ -147,28 +171,29 @@ class MyWindow(QWidget):
         R_G2_box.addWidget(R_G2_box_G2)
         R_G2.setLayout(R_G2_box)
         
-        # # R2 : 풍선
-        # R2 = QGroupBox('풍선의 좌표와 높이', self)
-        
-        # R2box = QHBoxLayout()
 
-        # R2box_1 = QVBoxLayout()
-        # R2box_1.addWidget(self.balloon_x_label)
-        # for i in range(n_balloons):
-        #     exec('R2box_1.addWidget(self.balloon_x_{})'.format(i))
-    
-        # R2box_2 = QVBoxLayout()
-        # R2box_2.addWidget(self.balloon_z_label)
-        # for i in range(n_balloons):
-        #     exec('R2box_2.addWidget(self.balloon_z_{})'.format(i))
-        
-        # R2box.addLayout(R2box_1)
-        # R2box.addLayout(R2box_2)
-        # R2.setLayout(R2box)
-        
-      
+          # R_G3: 바람
+        # R_G3 = QGroupBox('고도별 풍향과 풍속', self)  
+        # R_G3_box = QHBoxLayout()
 
-        # R3 : 바람
+        # R_G3_box_G1 = QGroupBox('풍향', self)
+        # R_G3_box_G1_box = QVBoxLayout()
+        # for i in range(n_winds):
+        #     exec('R_G3_box_G1_box.addWidget(self.wind_dir_{})'.format(i))
+        # R_G3_box_G1.setLayout(R_G3_box_G1_box)
+
+        # R_G3_box_G2 = QGroupBox('풍속', self)
+        # R_G3_box_G2_box = QVBoxLayout()
+        # for i in range(n_winds):
+        #     exec('R_G3_box_G2_box.addWidget(self.wind_vel_{})'.format(i))
+        # R_G3_box_G2.setLayout(R_G3_box_G2_box)
+
+        # R_G3_box.addWidget(R_G3_box_G1)
+        # R_G3_box.addWidget(R_G3_box_G2)
+        # R_G3.setLayout(R_G3_box)
+        
+
+        R3 : 바람
         R3 = QGroupBox('고도별 풍향과 풍속', self)
         
         R3box = QHBoxLayout()
@@ -182,11 +207,14 @@ class MyWindow(QWidget):
         R3box_2.addWidget(self.wind_dir_label)
         for i in range(n_winds):
             exec('R3box_2.addWidget(self.wind_dir_{})'.format(i))
+            exec('self.wind_dir_{}.setValidator(self.wind_dir_only)'.format(i))
+
         
         R3box_3 = QVBoxLayout()
         R3box_3.addWidget(self.wind_vel_label)
         for i in range(n_winds):
             exec('R3box_3.addWidget(self.wind_vel_{})'.format(i))
+            exec('self.wind_vel_{}.setValidator(self.int_only)'.format(i))
         R3box.addLayout(R3box_1)
         R3box.addLayout(R3box_2)
         R3box.addLayout(R3box_3)
@@ -223,7 +251,7 @@ class MyWindow(QWidget):
 
     def pushButtonClicked(self):
 
-        sb.drawplot(10, self.cannons, self.balloons, self.ax)
+        sb.drawplot(10, self.data['cannon'], self.data['balloon'], self.data['wind'], self.ax)
         img = plt.imread("map.png")
         self.ax.imshow(img, extent=[0, 8000, 0, 5000])   
         self.canvas.draw()
@@ -232,15 +260,18 @@ class MyWindow(QWidget):
 
 
     def lineEditChanged(self, widget, i, j, mat):
-        print(widget)
-        print(i)
-        print(j)
         try:
             mat.loc[i,j] = int(widget.text())
         except:
             print('입력이 없음')
         print(mat)
       
+    def lineEditChanged2(self, widget, i, j, mat):
+        try:
+            mat.iloc[i,j] = int(widget.text())
+        except:
+            print('입력이 없음')
+        print(mat) 
 
 
 if __name__ == "__main__":

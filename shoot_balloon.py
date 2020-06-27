@@ -7,20 +7,16 @@ from itertools import permutations
 import smallestenclosingcircle as sc
 #data
 
-wind_dic = {'h': [0,200,500,1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000],
-            'dir':[1,2,4,5,6,7,8,1,2,3,4,5,6,7,8,2],
-            'vel':[1,2,1,3,4,5,1,7,5,3,9,10,4,5,6,2]
-}
-wind_tbl = pd.DataFrame(wind_dic)
 
-wind_dir = {'dir': [1,2,3,4,5,6,7,8],
+
+wind_dir = {'wind_dir': [1,2,3,4,5,6,7,8],
             'vec':[ [0,1], [np.sqrt(0.5), np.sqrt(0.5)],
                     [1,0], [np.sqrt(0.5), -np.sqrt(0.5)],
                     [0,-1], [-np.sqrt(0.5), -np.sqrt(0.5)],
                     [-1,0], [-np.sqrt(0.5), np.sqrt(0.5)]]}
 wind_dir = pd.DataFrame(wind_dir)
 
-wind_tbl = pd.merge(wind_tbl, wind_dir, how = 'left', on = 'dir')
+
 
 #functions
 def cos_sim(v1, v2):
@@ -38,9 +34,11 @@ def allocate(cannons, balloons):
     n = len(balloons)
     dist_mat = np.zeros((n, n))
     
-    for i in cannons.index:
-        for j in balloons.index:
-            dist_mat[i,j] = la.norm( cannons.iloc[i, :] - balloons.iloc[j, :] )
+    for i in range(n):
+        for j in range(n):
+            a = np.array(cannons.iloc[i, :])
+            b = np.array(balloons.iloc[j, :])
+            dist_mat[i,j] = la.norm( a - b) 
     
     print(dist_mat)
     
@@ -86,7 +84,7 @@ def peak_xy(start_xyz, target_xyz, ran):
 
 
 
-def shoot(n_iter, cannon, balloon, ran, ax):
+def shoot(n_iter, cannon, balloon, wind_tbl, ran, ax):
     ax.scatter(cannon[0], cannon[1])
     ax.text(cannon[0], cannon[1], 'fire')
     ax.scatter(balloon[0], balloon[1])
@@ -106,15 +104,18 @@ def shoot(n_iter, cannon, balloon, ran, ax):
 
         # shoot
         #현재 고도보다 바로 위에 있는 테이블 값의 풍향을 사용할 것임
-        idx_now = (wind_tbl.h >= peak_z).tolist().index(True)
+        
+        wind_h = [idx[1] for idx in wind_tbl.index]
+        idx_now = (wind_h >= peak_z).tolist().index(True)
         h_now = peak_z
 
         #포탄 경로 그리기 준비
         
+        
         x_shootline = []; y_shootline = []
         total_move = 0
         while idx_now > 0:
-            h_down = h_now - wind_tbl.h[idx_now - 1] #수직 하강 거리
+            h_down = h_now - wind_h[idx_now - 1] #수직 하강 거리
             #print('고도 {} -> {}. {}만큼 하강하는 동안'.format(h_now, wind_tbl.h[idx_now - 1], h_down))
 
             one_step = h_down * np.tan(theta) #전진 거리. 풍향의 영향이 없을 때의 방향을 기준으로 거리를 계산함
@@ -149,7 +150,7 @@ def shoot(n_iter, cannon, balloon, ran, ax):
             #print('{},{}에 도착\n'.format(xy_now, wind_tbl.h[idx_now - 1]))
             
             idx_now -=1
-            h_now = wind_tbl.h[idx_now]
+            h_now = wind_h[idx_now]
 
         #plt.plot(x_shootline, y_shootline) #꺾인 발사
         x_values.append(xy_now[0])
@@ -172,23 +173,17 @@ def shoot(n_iter, cannon, balloon, ran, ax):
     #plt.scatter(idland[0], idland[1], s = 500) #이상적인 발사
 
 
-cannons = pd.DataFrame({'x': [3250, 6100, 8030], 'y':[2300, 3300, 3600], 'z':[1500,1000,2000]})
-
-balloons = pd.DataFrame({'x': [3100,6000,8000], 'y':[1100, 2150, 2200], 'z' : [50, 25, 130]})
-ranges = pd.DataFrame({'ran': [3000, 2000, 2000]})
 
 
 
-def drawplot(n_iter, cannons, balloons, ax):
+
+def drawplot(n_iter, cannons, balloons, winds, ax):
+    ranges = pd.DataFrame({'ran': [4000, 4000, 4000]})
+    wind_tbl = pd.merge(winds, wind_dir, how = 'left', on = 'wind_dir').set_index(winds.index)
+    print(wind_tbl)
+
     per, summ = allocate(cannons, balloons)
     for i, comb in enumerate(zip(range(len(cannons)), per)):
-        shoot( n_iter,  np.array(cannons.iloc[comb[0], :]), np.array(balloons.iloc[comb[1], :]), ranges.iloc[i,0], ax)
+        print(i, comb)
+        shoot( n_iter,  np.array(cannons.iloc[comb[0], :]), np.array(balloons.iloc[comb[1], :]), wind_tbl, ranges.iloc[i,0], ax)
 
-# fig1, ax1 = plt.subplots()
-# drawplot(10, cannons, balloons, ax1)
-# img = plt.imread("map.png")
-# ax1.imshow(img, extent=[0, 8000, 0, 5000])
-# plt.show()
-#plt.axis('off')
-#plt.show()
-#fig1.savefig('balloon_map.png', dpi=180, bbox_inches='tight')
