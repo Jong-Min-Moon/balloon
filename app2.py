@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from numpy import linalg as la
 from scipy.optimize import minimize
+from scipy.optimize import fmin_cobyla
 
 n_cannons = 2
 n_enemys = 2
@@ -136,9 +137,11 @@ class MyWindow(QWidget):
             exec('self.idland_{} = QLabel("")'.format(i))
             exec('self.actland_{} = QLabel("")'.format(i))
 
-        self.pushButton = QPushButton("발사각 계산하기")
-        self.pushButton.clicked.connect(self.pushButtonClicked)
+        self.pushButton1 = QPushButton("발사각 계산하기(grid serch)")
+        self.pushButton1.clicked.connect(self.GridSearch)
 
+        self.pushButton2 = QPushButton("발사각 계산하기(최적화 알고리즘)")
+        self.pushButton2.clicked.connect(self.OptimAlgo)
         
 
         
@@ -286,7 +289,8 @@ class MyWindow(QWidget):
         rightLayout.addWidget(R3)
         rightLayout.addStretch(3)
         rightLayout.addWidget(R_G4)
-        rightLayout.addWidget(self.pushButton)
+        rightLayout.addWidget(self.pushButton1)
+        rightLayout.addWidget(self.pushButton2)
      
        # 
 
@@ -306,7 +310,7 @@ class MyWindow(QWidget):
 
         self.setLayout(layout)
 
-    def pushButtonClicked(self):
+    def GridSearch(self):
         self.OptimOutput.setPlainText('각도 계산 중...')
         wind_tbl = pd.merge(self.data['wind'], self.wind_dir, how = 'left', on = 'wind_dir').set_index(self.data['wind'].index)
         cannon = np.array(self.data['cannon'].iloc[0, :])
@@ -325,13 +329,6 @@ class MyWindow(QWidget):
             print('direc_init:', direc_init)
             
             
-            # def f(x):
-            #     return (sb.optim(100, x[0], np.array([x[1],x[2]]), cannon_0, enemy, wind_tbl, ran))
-
-            # minimum =  minimize(f, x0 = [theta_init, direc_init[0], direc_init[1]], method = 'Nelder-Mead', options = {'maxfev'
-            #  : 3000})
-            # opt_eval = (sb.shoot_for_optim(100, cannon_0, sb.ang2coord(cannon[:1], minimum['x'][0], direc_init, 5000), wind_tbl, 5000))
-            # self.OptimOutput.setPlainText(str(minimum) + '\n 최적화 해의 값을 가지고 100발 쐈을 때의 탄착군 중심: {}'.format(opt_eval))
             theta_grid = np.linspace(0.01, np.pi/2-0.01, 300)
             scores = np.array([  sb.optim(100, atheta, direc_init, cannon_0, enemy, wind_tbl, ran) for atheta in theta_grid])
             theta_best = theta_grid[scores.argmin()]
@@ -339,6 +336,41 @@ class MyWindow(QWidget):
             self.OptimOutput.setPlainText('\n 최적화 해의 값을 가지고 100발 쐈을 때의 탄착군 중심: {}'.format(opt_eval))
             self.ax.plot(theta_grid, scores)
             self.canvas.draw()
+
+    def OptimAlgo(self):
+        wind_tbl = pd.merge(self.data['wind'], self.wind_dir, how = 'left', on = 'wind_dir').set_index(self.data['wind'].index)
+        cannon = np.array(self.data['cannon'].iloc[0, :])
+        cannon_0 = np.append(cannon, 0)
+        enemy = np.array(self.data['enemy'].iloc[0, :])
+        print('cannon, enemy:', cannon, enemy)
+        ran = 5000
+        under = la.norm(enemy - cannon)
+        print('밑변:', under )
+        if ran <= under:
+            QMessageBox.about(self, "오류", "포와 적의 거리가 너무 멀어서({}) 현재 사거리로는 목표지점에 착탄 불가합니다.".format(under))
+        else:
+            theta_init = np.arccos(under / ran )
+            print('theta_init:', theta_init)
+            direc_init = (enemy - cannon) / la.norm(enemy - cannon)
+            print('direc_init:', direc_init)
+                
+            def f(x):
+                return (sb.optim(100, x[0], np.array([x[1],x[2]]), cannon_0, enemy, wind_tbl, ran))
+            def constr1(x):
+                x[1]
+            def constr2(x):
+                np.pi/2 - x[1]
+            def constr3(x):
+                x[2]
+            def constr4(x):
+                np.pi/2 - x[2]
+            minimum = fmin_cobyla(f, [theta_init, direc_init[0], direc_init[1]], [constr1, constr2, constr3, constr4], rhoend=1e-7)
+            opt_eval = (sb.shoot_for_optim(100, cannon_0, sb.ang2coord(cannon[:1], minimum[0], minimum[1:], 5000), wind_tbl, 5000))
+            self.OptimOutput.setPlainText(str(minimum) + ' ' + str(opt_eval))
+                #  : 3000})
+            
+                # self.OptimOutput.setPlainText(str(minimum) + '\n 최적화 해의 값을 가지고 100발 쐈을 때의 탄착군 중심: {}'.format(opt_eval))
+
 
         
 
