@@ -1,25 +1,26 @@
+# 적 고사포가 풍선 사격시 바람의 영향을 고려하여 낙탄지점을 예측하는 GUI 프로그램
+
+
+
+import pandas as pd #데이터프레임 이용하기 위한 패키지
+import numpy as np #행렬 및 벡터 연산을 위한 패키지
+import matplotlib.pyplot as plt #그래프 작성을 위한 패키지
+
+#GUI 앱을 위한 패키지
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import shoot_balloon1 as sb
-import pandas as pd
-import numpy as np
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas #GUI앱에 matplotlib으로 그래프를 그리기 위한 패키지
 
 
-n_cannons = 1
-n_balloons = 1
-n_winds = 12
-h_min = 0
-h_max = 7000
-winds = np.linspace(h_min, h_max, num = n_winds + 1)
+import shoot_balloon as sb #낙탄지점 예측 알고리즘이 들어있는 코드
+
+#상황 설정
+n_cannons = 5 #적 고사포의 개수
+n_balloons = 3 #풍선의 개수
+winds = np.linspace(0, 8000, num = 12 + 1) #고도 0미터부터 8000미터까지의 구간을 아래와 같이 12개 구간으로 나눔
 winds_idx = [ (0,200), (201,500), (501,1000), (1001, 1500), (1501, 2000), (2001,2500), (2501,3000), (3001,4000), (4001,5000), (5001,6000), (6001,7000), (7001,8000) ]
 
-
-
-
-ranges = pd.DataFrame({'ran': [5000, 5000, 5000, 5000, 5000]})
 
 
 class MyWindow(QWidget):
@@ -37,7 +38,7 @@ class MyWindow(QWidget):
         self.data = {}
         self.data['cannon'] = pd.DataFrame(np.zeros((n_cannons, 3)), columns = ['cannon_x', 'cannon_y', 'cannon_z'])
         self.data['balloon'] = pd.DataFrame(np.zeros((n_balloons, 3)), columns = ['balloon_x', 'balloon_y', 'balloon_z'])
-        self.data['wind'] = pd.DataFrame(np.zeros((n_winds, 2)), index =winds_idx,  columns = ['wind_dir', 'wind_vel'])
+        self.data['wind'] = pd.DataFrame(np.zeros((12, 2)), index =winds_idx,  columns = ['wind_dir', 'wind_vel'])
 
  
 
@@ -96,7 +97,7 @@ class MyWindow(QWidget):
         
         self.wind_dir_list = {}
         self.wind_dir_label = QLabel('풍향')
-        for i in range(n_winds):
+        for i in range(12):
             exec('self.wind_dir_{} = QLineEdit()'.format(i))
             exec("self.wind_dir_list['self.wind_dir_{}'] = self.wind_dir_{}".format(i,i))
         
@@ -109,7 +110,7 @@ class MyWindow(QWidget):
 
         self.wind_vel_list = {}
         self.wind_vel_label = QLabel('풍속')
-        for i in range(n_winds):
+        for i in range(12):
             exec('self.wind_vel_{} = QLineEdit()'.format(i))
             exec("self.wind_vel_list['self.wind_vel_{}'] = self.wind_vel_{}".format(i,i))
 
@@ -131,27 +132,27 @@ class MyWindow(QWidget):
         #고사포
         #표시
         self.cannon_x_0.setText("610"); self.cannon_y_0.setText("6400"); self.cannon_z_0.setText("150")
-        # self.cannon_x_1.setText("3350"); self.cannon_y_1.setText("8000"); self.cannon_z_1.setText("200")
-        # self.cannon_x_2.setText("4900"); self.cannon_y_2.setText("7700"); self.cannon_z_2.setText("60")
-        # self.cannon_x_3.setText("6700"); self.cannon_y_3.setText("8600"); self.cannon_z_3.setText("500")
-        # self.cannon_x_4.setText("8400"); self.cannon_y_4.setText("7200"); self.cannon_z_4.setText("320")
+        self.cannon_x_1.setText("3350"); self.cannon_y_1.setText("8000"); self.cannon_z_1.setText("200")
+        self.cannon_x_2.setText("4900"); self.cannon_y_2.setText("7700"); self.cannon_z_2.setText("60")
+        self.cannon_x_3.setText("6700"); self.cannon_y_3.setText("8600"); self.cannon_z_3.setText("500")
+        self.cannon_x_4.setText("8400"); self.cannon_y_4.setText("7200"); self.cannon_z_4.setText("320")
 
         #실제 데이터
         self.data['cannon'].iloc[0,:] = [610, 6400, 150]
-        # self.data['cannon'].iloc[1,:] = [3350, 8000, 200]
-        # self.data['cannon'].iloc[2,:] = [4900, 7700, 60]
-        # self.data['cannon'].iloc[3,:] = [6700, 8600, 500]
-        # self.data['cannon'].iloc[4,:] = [8400, 7200, 320]
+        self.data['cannon'].iloc[1,:] = [3350, 8000, 200]
+        self.data['cannon'].iloc[2,:] = [4900, 7700, 60]
+        self.data['cannon'].iloc[3,:] = [6700, 8600, 500]
+        self.data['cannon'].iloc[4,:] = [8400, 7200, 320]
         
         #풍선
         #표시
         self.balloon_x_0.setText("2500"); self.balloon_y_0.setText("3900"); self.balloon_z_0.setText("4000")
-        # self.balloon_x_1.setText("4500"); self.balloon_y_1.setText("5200"); self.balloon_z_1.setText("4000")
-        # self.balloon_x_2.setText("7500"); self.balloon_y_2.setText("5300"); self.balloon_z_2.setText("4200")
+        self.balloon_x_1.setText("4500"); self.balloon_y_1.setText("5200"); self.balloon_z_1.setText("4000")
+        self.balloon_x_2.setText("7500"); self.balloon_y_2.setText("5300"); self.balloon_z_2.setText("4200")
         #실제 데이터
         self.data['balloon'].iloc[0,:] = [2500, 3900, 4000]
-        # self.data['balloon'].iloc[1,:] = [4500, 5200, 4000]
-        # self.data['balloon'].iloc[2,:] = [7500, 5300, 4200]
+        self.data['balloon'].iloc[1,:] = [4500, 5200, 4000]
+        self.data['balloon'].iloc[2,:] = [7500, 5300, 4200]
 
 
         #바람
@@ -276,19 +277,19 @@ class MyWindow(QWidget):
 
         R3box_1 = QVBoxLayout()
         R3box_1.addWidget(self.height_label)
-        for i in range(n_winds):
+        for i in range(12):
             exec('R3box_1.addWidget(self.height_label_{})'.format(i))
     
         R3box_2 = QVBoxLayout()
         R3box_2.addWidget(self.wind_dir_label)
-        for i in range(n_winds):
+        for i in range(12):
             exec('R3box_2.addWidget(self.wind_dir_{})'.format(i))
             exec('self.wind_dir_{}.setValidator(self.wind_dir_only)'.format(i))
 
         
         R3box_3 = QVBoxLayout()
         R3box_3.addWidget(self.wind_vel_label)
-        for i in range(n_winds):
+        for i in range(12):
             exec('R3box_3.addWidget(self.wind_vel_{})'.format(i))
             exec('self.wind_vel_{}.setValidator(self.int_only)'.format(i))
         R3box.addLayout(R3box_1)
@@ -369,7 +370,7 @@ class MyWindow(QWidget):
             #QMessageBox.about(self, "오류", "포의 고도가 풍선의 고도보다 높거나 같으면 발사할 수 없습니다")
         #else:
         self.ax.clear()
-        per, idland, actland = sb.drawplot(50, self.data['cannon'], self.data['balloon'], self.data['wind'], self.ax, ranges)
+        per, idland, actland = sb.drawplot(50, self.data['cannon'], self.data['balloon'], self.data['wind'], self.ax)
         print('idland:', idland)
         print('actland:', actland)
         #for i in range(len(per)):
@@ -379,8 +380,7 @@ class MyWindow(QWidget):
             exec('self.actland_{}.setText("{}")'.format(i, actland[i].round(2)))
         img = plt.imread("map.png")
         limit = list(self.ax.get_xlim()) + list(self.ax.get_ylim())
-        self.ax.imshow(img, extent=[-2000,8000, -2000,8000])   
-        self.ax.axis('off')
+        self.ax.imshow(img, extent=limit)   
         self.canvas.draw()
 
 

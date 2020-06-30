@@ -1,26 +1,26 @@
+# 적 고사포가 풍선 사격시 바람의 영향을 고려하여 낙탄지점을 예측하는 GUI 프로그램
+
+
+
+import pandas as pd #데이터프레임 이용하기 위한 패키지
+import numpy as np #행렬 및 벡터 연산을 위한 패키지
+import matplotlib.pyplot as plt #그래프 작성을 위한 패키지
+
+#GUI 앱을 위한 패키지
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import shoot_balloon as sb
-import pandas as pd
-import numpy as np
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas #GUI앱에 matplotlib으로 그래프를 그리기 위한 패키지
 
 
-n_cannons = 5
-n_balloons = 3
-n_winds = 12
-h_min = 0
-h_max = 7000
-winds = np.linspace(h_min, h_max, num = n_winds + 1)
+import shoot_balloon as sb #낙탄지점 예측 알고리즘이 들어있는 코드
+
+#상황 설정
+n_cannons = 5 #적 고사포의 개수
+n_balloons = 3 #풍선의 개수
+winds = np.linspace(0, 8000, num = 12 + 1) #고도 0미터부터 8000미터까지의 구간을 아래와 같이 12개 구간으로 나눔
 winds_idx = [ (0,200), (201,500), (501,1000), (1001, 1500), (1501, 2000), (2001,2500), (2501,3000), (3001,4000), (4001,5000), (5001,6000), (6001,7000), (7001,8000) ]
 
-
-
-#cannons = pd.DataFrame({'x': [7100,8000,9000], 'y':[1100, 1150, 1200], 'z' : [50, 25, 130]})
-#balloons = pd.DataFrame({'x': [7250, 8100, 9300], 'y':[2300, 2100, 2600], 'z':[1500,1000,2000]})
-ranges = pd.DataFrame({'ran': [5000, 5000, 5000, 5000, 5000]})
 
 
 class MyWindow(QWidget):
@@ -38,7 +38,7 @@ class MyWindow(QWidget):
         self.data = {}
         self.data['cannon'] = pd.DataFrame(np.zeros((n_cannons, 3)), columns = ['cannon_x', 'cannon_y', 'cannon_z'])
         self.data['balloon'] = pd.DataFrame(np.zeros((n_balloons, 3)), columns = ['balloon_x', 'balloon_y', 'balloon_z'])
-        self.data['wind'] = pd.DataFrame(np.zeros((n_winds, 2)), index =winds_idx,  columns = ['wind_dir', 'wind_vel'])
+        self.data['wind'] = pd.DataFrame(np.zeros((12, 2)), index =winds_idx,  columns = ['wind_dir', 'wind_vel'])
 
  
 
@@ -56,6 +56,7 @@ class MyWindow(QWidget):
         
         #initialize plt plot
         self.fig, self.ax = plt.subplots()
+        self.ax.axis('off')
         self.canvas = FigureCanvas(self.fig)
        
         
@@ -97,7 +98,7 @@ class MyWindow(QWidget):
         
         self.wind_dir_list = {}
         self.wind_dir_label = QLabel('풍향')
-        for i in range(n_winds):
+        for i in range(12):
             exec('self.wind_dir_{} = QLineEdit()'.format(i))
             exec("self.wind_dir_list['self.wind_dir_{}'] = self.wind_dir_{}".format(i,i))
         
@@ -110,7 +111,7 @@ class MyWindow(QWidget):
 
         self.wind_vel_list = {}
         self.wind_vel_label = QLabel('풍속')
-        for i in range(n_winds):
+        for i in range(12):
             exec('self.wind_vel_{} = QLineEdit()'.format(i))
             exec("self.wind_vel_list['self.wind_vel_{}'] = self.wind_vel_{}".format(i,i))
 
@@ -277,19 +278,19 @@ class MyWindow(QWidget):
 
         R3box_1 = QVBoxLayout()
         R3box_1.addWidget(self.height_label)
-        for i in range(n_winds):
+        for i in range(12):
             exec('R3box_1.addWidget(self.height_label_{})'.format(i))
     
         R3box_2 = QVBoxLayout()
         R3box_2.addWidget(self.wind_dir_label)
-        for i in range(n_winds):
+        for i in range(12):
             exec('R3box_2.addWidget(self.wind_dir_{})'.format(i))
             exec('self.wind_dir_{}.setValidator(self.wind_dir_only)'.format(i))
 
         
         R3box_3 = QVBoxLayout()
         R3box_3.addWidget(self.wind_vel_label)
-        for i in range(n_winds):
+        for i in range(12):
             exec('R3box_3.addWidget(self.wind_vel_{})'.format(i))
             exec('self.wind_vel_{}.setValidator(self.int_only)'.format(i))
         R3box.addLayout(R3box_1)
@@ -308,7 +309,7 @@ class MyWindow(QWidget):
         for i in range(n_cannons):
             exec('R_G4_box_G1_box_1.addWidget(self.cannon_alloc_{})'.format(i))
         R_G4_box_G1_box_2 = QVBoxLayout()
-        for i in range(n_balloons):
+        for i in range(n_cannons):
             exec('R_G4_box_G1_box_2.addWidget(self.alloc_{})'.format(i))
         R_G4_box_G1_box_3 = QVBoxLayout()
         for i in range(n_cannons):
@@ -369,10 +370,8 @@ class MyWindow(QWidget):
         #if sum(self.data['cannon'].cannon_z >= self.data['balloon'].balloon_z ) > 0:
             #QMessageBox.about(self, "오류", "포의 고도가 풍선의 고도보다 높거나 같으면 발사할 수 없습니다")
         #else:
-        self.ax.clear()
-        per, idland, actland = sb.drawplot(50, self.data['cannon'], self.data['balloon'], self.data['wind'], self.ax, ranges)
-        print('idland:', idland)
-        print('actland:', actland)
+        self.ax.clear(); self.ax.axis('off')
+        per, idland, actland = sb.drawplot(50, self.data['cannon'], self.data['balloon'], self.data['wind'], self.ax)
         #for i in range(len(per)):
         for i, alloc in enumerate(per):
             exec('self.balloon_alloc_{}.setText("풍선 {}")'.format(i, alloc + 1))
@@ -392,14 +391,12 @@ class MyWindow(QWidget):
 
         except:
             print('입력이 없음')
-        print(mat)
       
     def lineEditChanged2(self, widget, i, j, mat):
         try:
             mat.iloc[i,j] = int(widget.text())
         except:
             print('입력이 없음')
-        print(mat) 
 
 
 if __name__ == "__main__":
