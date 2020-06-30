@@ -1,7 +1,11 @@
-from scipy.optimize import minimize
+import matplotlib.pyplot as plt
 import numpy as np
-def f(x):
-    return x[0]**2 + x[1]*2 + 1
+import shoot_balloon as sb
 
-minimum = minimize(f, x0 = np.array([1,1]), method = 'Nelder-Mead')
-print(str(minimum))
+x_val = np.linspace(0.001, 90 - 0.001, 100)
+y_val1 = [sb.theta2hd(x)[0] for x in x_val] #h
+y_val2 = [sb.theta2hd(x)[1] for x in x_val] #d
+
+plt.plot(x_val, y_val1)
+plt.plot(x_val, y_val2)
+plt.show()

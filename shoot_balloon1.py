@@ -123,7 +123,7 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
             cossim = cos_sim(direc_now, wind_vec)
             rbeta = np.random.beta(2,15)
             #print('rbeta:', rbeta)
-            vel_power = (100 + cossim * wind_vel) / 270
+            vel_power = (100 + cossim * wind_vel) / 170
             one_step = one_step * vel_power * (1 + rbeta)  #전진거리 수정
             #print('풍속에 의해 수정된 전진 거리: {}'.format(one_step))
             if abs(cossim) != 1:
@@ -215,7 +215,7 @@ def shoot_for_optim(n_points, cannon, enemy, degree, direc, wind_tbl):
             
             cossim = cos_sim(direc_now, wind_vec)
             rbeta = np.random.beta(2,40)
-            
+            print('rbeta:', rbeta)
             vel_power = (100 + cossim * 1.5 * wind_vel) / 100
             one_step = one_step * vel_power * (1 + rbeta) #전진거리 수정
             #print('풍속에 의해 수정된 전진 거리: {}'.format(one_step))

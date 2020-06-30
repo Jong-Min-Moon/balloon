@@ -3,13 +3,13 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import shoot_balloon as sb
+import shoot_balloon1 as sb
 import pandas as pd
 import numpy as np
 
 
-n_cannons = 5
-n_balloons = 3
+n_cannons = 1
+n_balloons = 1
 n_winds = 12
 h_min = 0
 h_max = 7000
@@ -132,27 +132,27 @@ class MyWindow(QWidget):
         #고사포
         #표시
         self.cannon_x_0.setText("610"); self.cannon_y_0.setText("6400"); self.cannon_z_0.setText("150")
-        self.cannon_x_1.setText("3350"); self.cannon_y_1.setText("8000"); self.cannon_z_1.setText("200")
-        self.cannon_x_2.setText("4900"); self.cannon_y_2.setText("7700"); self.cannon_z_2.setText("60")
-        self.cannon_x_3.setText("6700"); self.cannon_y_3.setText("8600"); self.cannon_z_3.setText("500")
-        self.cannon_x_4.setText("8400"); self.cannon_y_4.setText("7200"); self.cannon_z_4.setText("320")
+        # self.cannon_x_1.setText("3350"); self.cannon_y_1.setText("8000"); self.cannon_z_1.setText("200")
+        # self.cannon_x_2.setText("4900"); self.cannon_y_2.setText("7700"); self.cannon_z_2.setText("60")
+        # self.cannon_x_3.setText("6700"); self.cannon_y_3.setText("8600"); self.cannon_z_3.setText("500")
+        # self.cannon_x_4.setText("8400"); self.cannon_y_4.setText("7200"); self.cannon_z_4.setText("320")
 
         #실제 데이터
         self.data['cannon'].iloc[0,:] = [610, 6400, 150]
-        self.data['cannon'].iloc[1,:] = [3350, 8000, 200]
-        self.data['cannon'].iloc[2,:] = [4900, 7700, 60]
-        self.data['cannon'].iloc[3,:] = [6700, 8600, 500]
-        self.data['cannon'].iloc[4,:] = [8400, 7200, 320]
+        # self.data['cannon'].iloc[1,:] = [3350, 8000, 200]
+        # self.data['cannon'].iloc[2,:] = [4900, 7700, 60]
+        # self.data['cannon'].iloc[3,:] = [6700, 8600, 500]
+        # self.data['cannon'].iloc[4,:] = [8400, 7200, 320]
         
         #풍선
         #표시
         self.balloon_x_0.setText("2500"); self.balloon_y_0.setText("3900"); self.balloon_z_0.setText("4000")
-        self.balloon_x_1.setText("4500"); self.balloon_y_1.setText("5200"); self.balloon_z_1.setText("4000")
-        self.balloon_x_2.setText("7500"); self.balloon_y_2.setText("5300"); self.balloon_z_2.setText("4200")
+        # self.balloon_x_1.setText("4500"); self.balloon_y_1.setText("5200"); self.balloon_z_1.setText("4000")
+        # self.balloon_x_2.setText("7500"); self.balloon_y_2.setText("5300"); self.balloon_z_2.setText("4200")
         #실제 데이터
         self.data['balloon'].iloc[0,:] = [2500, 3900, 4000]
-        self.data['balloon'].iloc[1,:] = [4500, 5200, 4000]
-        self.data['balloon'].iloc[2,:] = [7500, 5300, 4200]
+        # self.data['balloon'].iloc[1,:] = [4500, 5200, 4000]
+        # self.data['balloon'].iloc[2,:] = [7500, 5300, 4200]
 
 
         #바람
@@ -380,7 +380,8 @@ class MyWindow(QWidget):
             exec('self.actland_{}.setText("{}")'.format(i, actland[i].round(2)))
         img = plt.imread("map.png")
         limit = list(self.ax.get_xlim()) + list(self.ax.get_ylim())
-        self.ax.imshow(img, extent=limit)   
+        self.ax.imshow(img, extent=[-2000,8000, -2000,8000])   
+        self.ax.axis('off')
         self.canvas.draw()
 
 
