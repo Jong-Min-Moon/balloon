@@ -66,16 +66,6 @@ def allocate(cannons, balloons):
         match.append(distances.argmin())
 
 
-    # sum_min = np.inf
-    # permu_min = 0
-    # for permu in permutations(range(n), n):
-    #     sum = 0
-    #     for tup in (zip(range(n), permu)):
-    #         sum += dist_mat[tup]
-    #     if sum < sum_min:
-    #         permu_min = permu
-    #         sum_min = sum
-
     return match
 
 def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
@@ -84,7 +74,7 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
     ax.scatter(balloon[0], balloon[1], color = mycol, s = 300); ax.text(balloon[0], balloon[1], 'balloon')
 
     x_values = []; y_values = [] #착탄점들의 중심점을 구하기 위해 다 저장
-    #x_shootline = []; y_shootline = [] #착탄 경로 저장
+    x_shootline = []; y_shootline = [] #착탄 경로 저장
     for i in range(n_iter):
         np.random.seed(i)
         #print('iteration {}'.format(i))
@@ -141,7 +131,7 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
 
             #포탄의 전진.
             xy_now = xy_now + direc_now * one_step
-            #x_shootline.append(xy_now[0]); y_shootline.append(xy_now[1])  #peak에서 착탄까지 경로 저장
+            x_shootline.append(xy_now[0]); y_shootline.append(xy_now[1])  #peak에서 착탄까지 경로 저장
             #print('{},{}에 도착\n'.format(xy_now, wind_h[idx_now - 1]))
             
             idx_now -=1
@@ -156,7 +146,7 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
         ax.scatter(xy_now[0], xy_now[1], s = 5, color = mycol) #착탄지점 그래프에 그리기
         
     #print('실제로 총 {}만큼 전진'.format(total_move))
-
+    ax.plot(x_shootline, y_shootline, c = np.random.randint(0, n_iter, n_iter), cmap = plt.cm.rainbow)
     cir = sc.make_circle(zip(x_values, y_values))
     ax.text(cir[0], cir[1], 'center') #최고점
     ax.add_patch( patches.Circle( (cir[0], cir[1]), # (x, y)
