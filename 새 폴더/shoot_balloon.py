@@ -6,7 +6,8 @@ import matplotlib.patches as patches
 from itertools import permutations
 import smallestenclosingcircle as sc
 
-col_list = ['indianred', 'firebrick', 'maroon', 'red', 'crimson' , 'orangered', 'tab:brown', 'tab:pink'] #그래프 그릴 때 사용할 색상의 목록.
+enemy_col_list = ['indianred', 'firebrick', 'maroon', 'red', 'crimson' , 'orangered', 'tab:brown', 'tab:pink'] #그래프 그릴 때 사용할 색상의 목록.
+bullet_col_list = ['#F9A602', '#FCE205', '#F8DE7E', '#F5F5DC', '#F8E473']
 
 def rotate_matrix(theta):
     #2차원 벡터를 시계 반대 방향으로 theta(radian)만큼 회전시키는 함수. 바람 벡터를 만들 때 사용.
@@ -100,10 +101,11 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
     #       matplotlib 객체(그래프를 그리는 공간)
     #       0에서 7 사이의 정수(색상 코드)
     
-    mycol = col_list[col_id] #색상 정하기
+    enemy_col = enemy_col_list[col_id] #적 고사포 색상
+    bullet_col = bullet_col_list[col_id]
 
-    ax.scatter(cannon[0], cannon[1], color = mycol); ax.text(cannon[0], cannon[1], 'fire') #고사포의 위치를 그래프에 기록
-    ax.scatter(balloon[0], balloon[1], color = mycol, s = 300); ax.text(balloon[0], balloon[1], 'balloon') #풍선의 위치를 그래프에 기록
+    ax.scatter(cannon[0], cannon[1], color = enemy_col); ax.text(cannon[0], cannon[1], 'fire') #고사포의 위치를 그래프에 기록
+    ax.scatter(balloon[0], balloon[1], color = 'royalblue', s = 300); ax.text(balloon[0], balloon[1], 'balloon') #풍선의 위치를 그래프에 기록
 
     x_values = []; y_values = [] #낙탄지점 저장소
     for i in range(n_iter):
@@ -112,10 +114,10 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
         #print('peak_z:', peak_z)
         if i == 0:
             #ax.scatter(xy_now[0], xy_now[1], color = mycol); ax.text(xy_now[0], xy_now[1], 'peak') #최고점
-            ax.scatter(idland[0], idland[1], s = 40, alpha = 0.7, color = mycol); ax.text(idland[0], idland[1], 'theoretical') 
-            ax.plot( [cannon[0], balloon[0]], [cannon[1], balloon[1]], color = mycol) #cannon to balloon
-            ax.plot( [balloon[0], xy_now[0]], [balloon[1], xy_now[1]], color = mycol) #baloon to peak
-            ax.plot( [xy_now[0], idland[0]], [xy_now[1], idland[1]], linestyle = '--', color = mycol) #peak to ideal landing
+            ax.scatter(idland[0], idland[1], s = 40, alpha = 0.7, color = bullet_col); ax.text(idland[0], idland[1], 'theoretical') 
+            ax.plot( [cannon[0], balloon[0]], [cannon[1], balloon[1]], color = bullet_col) #cannon to balloon
+            ax.plot( [balloon[0], xy_now[0]], [balloon[1], xy_now[1]], color = bullet_col) #baloon to peak
+            ax.plot( [xy_now[0], idland[0]], [xy_now[1], idland[1]], linestyle = '--', color = bullet_col) #peak to ideal landing
         
 
         # shoot
@@ -173,7 +175,7 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
         y_values.append(xy_now[1])
 
         
-        ax.scatter(xy_now[0], xy_now[1], s = 5, color = mycol) #착탄지점 그래프에 그리기
+        ax.scatter(xy_now[0], xy_now[1], s = 5, color = bullet_col) #착탄지점 그래프에 그리기
         
     #print('실제로 총 {}만큼 전진'.format(total_move))
 
@@ -181,9 +183,8 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
     ax.text(cir[0], cir[1], 'center') #최고점
     ax.add_patch( patches.Circle( (cir[0], cir[1]), # (x, y)
                                             cir[2], # radius
-        alpha=0.4, 
-        facecolor=mycol, 
-        edgecolor=mycol, 
+        alpha=0.35, 
+        facecolor=bullet_col, 
         linewidth=2, 
         linestyle='solid'))
   
