@@ -34,7 +34,8 @@ class MyWindow(QWidget):
         self.setWindowIcon(QIcon('icon.png'))
         
         #initialize data matrix
-        self.n_dic = {'cannon_x':n_cannons, 'cannon_y':n_cannons, 'cannon_z':n_cannons, 'balloon_x':n_balloons, 'balloon_y':n_balloons, 'balloon_z':n_balloons}
+        self.int_input_widgets = {'cannon_z' : n_cannons, 'balloon_z' : n_balloons}
+        self.MGRS_input_widgets = {'cannon_x' : n_cannons, 'cannon_y':n_cannons, 'balloon_x':n_balloons, 'balloon_y':n_balloons}
         self.data = {}
         self.data['cannon'] = pd.DataFrame(np.zeros((n_cannons, 3)), columns = ['cannon_x', 'cannon_y', 'cannon_z'])
         self.data['balloon'] = pd.DataFrame(np.zeros((n_balloons, 3)), columns = ['balloon_x', 'balloon_y', 'balloon_z'])
@@ -43,16 +44,12 @@ class MyWindow(QWidget):
  
 
 
-        
 
 
-  
-        
-
-
+        #입력값 validators
         self.wind_dir_only = QIntValidator(0, 6399, self)
         self.int_only = QIntValidator(0,99999,self)
-        
+        self.MGRSvalid = QRegExpValidator(QRegExp("\d{10}"), self)
         
         #initialize plt plot
         self.fig, self.ax = plt.subplots()
@@ -60,18 +57,20 @@ class MyWindow(QWidget):
         self.canvas = FigureCanvas(self.fig)
        
         
-        #고사포와 풍선
-       
-        self.balloon_x_label = QLabel('좌표')
-        self.balloon_z_label = QLabel('높이')
+        #고사포와 풍선 좌표 및 높이 입력 위젯 생성
 
-        self.cannon_balloon_list = {}
-        for obj_name in self.n_dic:
+        self.LineEdit_list_cannon_balloon = {}
+        for obj_name in self.int_input_widgets: #0-99999의 값을 input으로 받는 입력창 widget을 생성(적 고사포와 풍선의 높이)
             for i in range(self.n_dic[obj_name]):
                 exec('self.{}_{} = QLineEdit()'.format(obj_name, i))
                 exec('self.{}_{}.setValidator(self.int_only)'.format(obj_name, i))
-                exec('self.cannon_balloon_list["self.{}_{}"] = self.{}_{}'.format(obj_name, i, obj_name, i))
-        for widget in self.cannon_balloon_list:
+                exec('self.LineEdit_list_cannon_balloon["self.{}_{}"] = self.{}_{}'.format(obj_name, i, obj_name, i))
+        for obj_name in self.MGRSvalid: #5자리 숫자를 input으로 받는 입력창 widget을 생성(적 고사포와 풍선의 MGRS 좌표)
+            for i in range(self.n_dic[obj_name]):
+                exec('self.{}_{} = QLineEdit()'.format(obj_name, i))
+                exec('self.{}_{}.setValidator(self.MGRSvalid'.format(obj_name, i))
+                exec('self.LineEdit_list_cannon_balloon["self.{}_{}"] = self.{}_{}'.format(obj_name, i, obj_name, i))
+        for widget in self.cannon_balloon_list: #위에서 생성한 위젯에 입력 함수를 할당
             inputs = widget.replace('self.', '').split('_')
             i = int(inputs[2])
             j = inputs[0] + '_' + inputs[1]
@@ -203,7 +202,7 @@ class MyWindow(QWidget):
         R_G1 = QGroupBox('적 고사총 위치', self)  
         R_G1_box = QHBoxLayout()
 
-        R_G1_box_G1 = QGroupBox('좌표', self)
+        R_G1_box_G1 = QGroupBox('MGRS 좌표', self)
         R_G1_box_G1_box = QHBoxLayout()
 
         R_G1_box_G1_box_0 = QVBoxLayout()
@@ -223,7 +222,7 @@ class MyWindow(QWidget):
         R_G1_box_G1_box.addLayout(R_G1_box_G1_box_2)
         R_G1_box_G1.setLayout(R_G1_box_G1_box)
 
-        R_G1_box_G2 = QGroupBox('높이', self)
+        R_G1_box_G2 = QGroupBox('높이(미터)', self)
         R_G1_box_G2_box = QVBoxLayout()
         for i in range(n_cannons):
             exec('R_G1_box_G2_box.addWidget(self.cannon_z_{})'.format(i))
@@ -241,7 +240,7 @@ class MyWindow(QWidget):
         R_G2 = QGroupBox('풍선', self)  
         R_G2_box = QHBoxLayout()
 
-        R_G2_box_G1 = QGroupBox('좌표', self)
+        R_G2_box_G1 = QGroupBox('MGRS 좌표', self)
         R_G2_box_G1_box = QHBoxLayout()
 
         R_G2_box_G1_box_0 = QVBoxLayout()
@@ -260,7 +259,7 @@ class MyWindow(QWidget):
         R_G2_box_G1_box.addLayout(R_G2_box_G1_box_2)
         R_G2_box_G1.setLayout(R_G2_box_G1_box)
 
-        R_G2_box_G2 = QGroupBox('높이', self)
+        R_G2_box_G2 = QGroupBox('높이(미터)', self)
         R_G2_box_G2_box = QVBoxLayout()
         for i in range(n_balloons):
             exec('R_G2_box_G2_box.addWidget(self.balloon_z_{})'.format(i))
