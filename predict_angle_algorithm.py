@@ -15,12 +15,17 @@ def rotate_matrix(theta):
     return np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
 
 def vec2mil(v):
-    x_flip = np.array([v[0], -v[1]])
-    rotate_90 = np.dot(rotate_matrix(np.pi/2), x_flip)
-    radian = np.arctan2(rotate_90[1], rotate_90[0])
-    degree = radian * 180 / np.pi
-    mil = degree * 6400 / 360
-    return int(round(mil,0))
+    radian = np.arctan2(v[1], v[0])
+    if radian < 0:
+        radian += 2 * np.pi 
+    
+    if radian <= np.pi / 2:
+        radian = np.pi / 2 - radian
+    else:
+        radian = np.pi / 2 + (2 * np.pi - radian)
+    
+    return int(round(radian * 180 / np.pi * 6400 / 360, 0))
+    
 
 col_list = ['navy', 'royalblue', 'mediumblue', 'slateblue', 'darkblue' , 'orangered', 'tab:brown', 'tab:pink']
 wind_dir = {'wind_dir': list(range(6400)[::-1]) ,

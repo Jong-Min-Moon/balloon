@@ -7,7 +7,7 @@ from itertools import permutations
 import smallestenclosingcircle as sc
 
 enemy_col_list = ['indianred', 'firebrick', 'maroon', 'red', 'crimson' , 'orangered', 'tab:brown', 'tab:pink'] #그래프 그릴 때 사용할 색상의 목록.
-bullet_col_list = ['#F9A602', '#FCE205', '#F8DE7E', '#F5F5DC', '#F8E473']
+bullet_col_list = ['#F9A602', '#FCE205', '#F8DE7E', '#C49102', '#FCD12A']
 
 def rotate_matrix(theta):
     #2차원 벡터를 시계 반대 방향으로 theta(radian)만큼 회전시키는 함수. 바람 벡터를 만들 때 사용.
@@ -34,6 +34,17 @@ def theta2hd(degree):
     elif degree < 45:
         return 1000 / 9 * degree, 4250 + (750 / 9 * degree)
 
+def five_digits(v):
+    fd = ''
+    for num_str in v.round().astype(int).astype(str):
+
+        if len(num_str) < 5:
+            zeros = ''.join(['0' for _ in range(5 - len(num_str))])
+            fd = fd + zeros + num_str
+        else:
+            fd = fd + num_str
+        fd = fd + ' '
+    return fd
 
 def allocate(cannons, balloons):
     #각 고사포에게 가장 가까운 풍선을 할당해 주는 함수
@@ -49,14 +60,11 @@ def allocate(cannons, balloons):
             b = np.array(balloons.iloc[j, :])
             dist_mat[i,j] = la.norm(a - b)  
     allocation = []
-    available = []
     #각 고사포마다 가장 가까운 풍선을 선택
     for i in range(m):
         distances = dist_mat[i,:]
         this_alloc = distances.argmin()
-        this_avail = np.delete(np.where( (distances < 1000) == 1), this_alloc)
         allocation.append(this_alloc)
-        availabe.append(this_avail)
 
     return allocation
 

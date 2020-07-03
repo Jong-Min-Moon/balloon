@@ -179,9 +179,6 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
 
     return idland, np.array([cir[0], cir[1]])
 
-def optim(n_points, degree, v, cannon, enemy, wind_tbl):
-    center = shoot_for_optim(n_points, cannon, enemy, degree, v, wind_tbl)
-    return la.norm(center - enemy[:2])
 
     
 
@@ -199,81 +196,6 @@ def drawplot(n_iter, cannons, balloons, winds, ax):
 #
 
 
-
-def shoot_for_optim(n_points, cannon, enemy, degree, direc, wind_tbl):
-
-    x_values = []; y_values = [] #착탄점들의 중심점을 구하기 위해 다 저장
-
-    h, d_final = theta2hd(degree)
-    idland_og = cannon[:2] + d_final * direc
-    d = h / np.tan(degree * (np.pi / 180))
-    
-    peak_z_og = cannon[2] + h
-    xy_now_og = cannon[:2] + d * direc
-    for i in range(n_points):
-        idland = idland_og
-        xy_now = xy_now_og
-        peak_z = peak_z_og
-        direc_now = direc
-        np.random.seed(i)
-
-        #initialize
-
-
-
-        # shoot
-        #현재 고도보다 바로 위에 있는 테이블 값의 풍향을 사용할 것임
-        wind_h = [idx[1] for idx in wind_tbl.index]; wind_h.insert(0,0)
-        idx_now = (wind_h >= peak_z).tolist().index(True)
-        h_now = peak_z
-
-        #포탄 경로 그리기 준비      
-        while idx_now > 0:
-            h_down = h_now - wind_h[idx_now - 1] #수직 하강 거리
-
-
-            one_step = h_down * np.tan(degree *(np.pi / 180)) #전진 거리. 풍향의 영향이 없을 때의 방향을 기준으로 거리를 계산함
-     
-
-            wind_vec = np.array(wind_tbl.vec[idx_now-1])
-            wind_vel = wind_tbl.wind_vel[idx_now-1]
- 
-            
-            cossim = cos_sim(direc_now, wind_vec)
-   
-            rbeta = np.random.beta(2,40)
-            
-            vel_power = (100 + cossim * 1.5 * wind_vel) / 270
-            
-            one_step = one_step * vel_power * (1 + rbeta) #전진거리 수정
-            if abs(cossim) != 1:
-                #풍향과 풍속을 고려하여 방향 수정
-                w = rbeta * vel_power 
-                direc_now = (1-w) * direc_now + w * wind_vec.astype('float64')
-                direc_now =  (direc_now ) / la.norm(direc_now) #unit vector로 만들기
-
-
-
-                
-            #계산 종료.
-
-            #포탄의 전진.
-            xy_now = xy_now + direc_now * one_step
-
-            
-            idx_now -=1
-            h_now = wind_h[idx_now]
-
-        
-        x_values.append(xy_now[0])
-        y_values.append(xy_now[1])
-
-                
-
-    cir = sc.make_circle(zip(x_values, y_values))
-  
-  
-    return np.array([cir[0], cir[1]])
 
 
 

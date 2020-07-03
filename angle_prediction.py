@@ -1,6 +1,7 @@
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
+from PyQt5.QtCore import QRegExp
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import shoot_balloon as sb
@@ -19,9 +20,6 @@ winds = np.linspace(h_min, h_max, num = n_winds + 1)
 winds_idx = [ (0,200), (201,500), (501,1000), (1001, 1500), (1501, 2000), (2001,2500), (2501,3000), (3001,4000), (4001,5000), (5001,6000), (6001,7000), (7001,8000) ]
 
 
-
-#cannons = pd.DataFrame({'x': [7100,8000,9000], 'y':[1100, 1150, 1200], 'z' : [50, 25, 130]})
-#balloons = pd.DataFrame({'x': [7250, 8100, 9300], 'y':[2300, 2100, 2600], 'z':[1500,1000,2000]})
 ranges = pd.DataFrame({'ran': [5000, 5000, 5000, 5000, 5000]})
 
 
@@ -38,7 +36,8 @@ class MyWindow(QWidget):
         #initialize data matrix
         self.wind_dir = pd.DataFrame({'wind_dir': list(range(6400)) ,
             'vec': [np.dot(sb.rotate_matrix( i * np.pi / 6400), np.array([0,1]))for i in range(6400)] })
-        self.n_dic = {'cannon_x':n_cannons, 'cannon_y':n_cannons, 'cannon_z':n_cannons, 'balloon_x':n_balloons, 'balloon_y':n_balloons, 'balloon_z':n_balloons}
+        self.int_input_widgets = {'cannon_z' : n_cannons, 'balloon_z' : n_balloons}
+        self.MGRS_input_widgets = {'cannon_x' : n_cannons, 'cannon_y':n_cannons, 'balloon_x':n_balloons, 'balloon_y':n_balloons}
         self.data = {}
         self.data['cannon'] = pd.DataFrame(np.zeros((n_cannons, 3)), columns = ['cannon_x', 'cannon_y', 'cannon_z'])
         self.data['balloon'] = pd.DataFrame(np.zeros((n_balloons, 3)), columns = ['balloon_x', 'balloon_y', 'balloon_z'])
@@ -46,10 +45,11 @@ class MyWindow(QWidget):
  
         self.wind_dir_only = QIntValidator(0, 6399, self)
         self.int_only = QIntValidator(0,99999,self)
-        
+        self.MGRSvalid = QRegExpValidator(QRegExp("\d{5}"), self)
         
         #initialize plt plot
         self.fig, self.ax = plt.subplots()
+        self.ax.axis('off')
         self.canvas = FigureCanvas(self.fig)
        
         
@@ -58,19 +58,24 @@ class MyWindow(QWidget):
         self.balloon_x_label = QLabel('좌표')
         self.balloon_z_label = QLabel('높이')
 
-        self.cannon_balloon_list = {}
-        for obj_name in self.n_dic:
-            for i in range(self.n_dic[obj_name]):
+        self.LineEdit_list_cannon_balloon = {}
+        for obj_name in self.int_input_widgets: #0-99999의 값을 input으로 받는 입력창 widget을 생성(적 고사포와 풍선의 높이)
+            for i in range(self.int_input_widgets[obj_name]):
                 exec('self.{}_{} = QLineEdit()'.format(obj_name, i))
                 exec('self.{}_{}.setValidator(self.int_only)'.format(obj_name, i))
-                exec('self.cannon_balloon_list["self.{}_{}"] = self.{}_{}'.format(obj_name, i, obj_name, i))
-        for widget in self.cannon_balloon_list:
+                exec('self.LineEdit_list_cannon_balloon["self.{}_{}"] = self.{}_{}'.format(obj_name, i, obj_name, i))
+        for obj_name in self.MGRS_input_widgets: #5자리 숫자를 input으로 받는 입력창 widget을 생성(적 고사포와 풍선의 MGRS 좌표)
+            for i in range(self.MGRS_input_widgets[obj_name]):
+                exec('self.{}_{} = QLineEdit()'.format(obj_name, i))
+                exec('self.{}_{}.setValidator(self.MGRSvalid)'.format(obj_name, i))
+                exec('self.LineEdit_list_cannon_balloon["self.{}_{}"] = self.{}_{}'.format(obj_name, i, obj_name, i))
+        for widget in self.LineEdit_list_cannon_balloon: #위에서 생성한 위젯에 입력 함수를 할당
             inputs = widget.replace('self.', '').split('_')
             i = int(inputs[2])
             j = inputs[0] + '_' + inputs[1]
             mat = self.data[inputs[0]]
-            self.cannon_balloon_list[widget].textChanged.connect(lambda a = widget, this_widget = self.cannon_balloon_list[widget], this_i = i, this_j = j, this_mat = mat: self.lineEditChanged(this_widget, this_i, this_j, this_mat ))
-        
+            self.LineEdit_list_cannon_balloon[widget].textChanged.connect(lambda a = widget, this_widget = self.LineEdit_list_cannon_balloon[widget], this_i = i, this_j = j, this_mat = mat: self.lineEditChanged(this_widget, this_i, this_j, this_mat ))
+          
         
 
 
@@ -125,11 +130,11 @@ class MyWindow(QWidget):
 ######기본값 linedeit에 입력
         #고사포
         #표시
-        self.cannon_x_0.setText("610"); self.cannon_y_0.setText("6400"); self.cannon_z_0.setText("150")
-        self.cannon_x_1.setText("3350"); self.cannon_y_1.setText("8000"); self.cannon_z_1.setText("130")
-        self.cannon_x_2.setText("4900"); self.cannon_y_2.setText("7700"); self.cannon_z_2.setText("220")
-        self.cannon_x_3.setText("6700"); self.cannon_y_3.setText("8000"); self.cannon_z_3.setText("320")
-        self.cannon_x_4.setText("8400"); self.cannon_y_4.setText("7200"); self.cannon_z_4.setText("220")
+        self.cannon_x_0.setText("00610"); self.cannon_y_0.setText("06400"); self.cannon_z_0.setText("150")
+        self.cannon_x_1.setText("03350"); self.cannon_y_1.setText("08000"); self.cannon_z_1.setText("130")
+        self.cannon_x_2.setText("04900"); self.cannon_y_2.setText("07700"); self.cannon_z_2.setText("220")
+        self.cannon_x_3.setText("06700"); self.cannon_y_3.setText("08000"); self.cannon_z_3.setText("320")
+        self.cannon_x_4.setText("08400"); self.cannon_y_4.setText("07200"); self.cannon_z_4.setText("220")
 
         #실제 데이터
         self.data['cannon'].iloc[0,:] = [610, 6400, 150]
@@ -140,10 +145,10 @@ class MyWindow(QWidget):
         
         #아군 K-6
         #표시
-        self.balloon_x_0.setText("2500"); self.balloon_y_0.setText("3900"); self.balloon_z_0.setText("150")
+        self.balloon_x_0.setText("02500"); self.balloon_y_0.setText("03900"); self.balloon_z_0.setText("150")
         #self.balloon_x_1.setText("3200"); self.balloon_y_1.setText("5200"); self.balloon_z_1.setText("130")
-        self.balloon_x_1.setText("5200"); self.balloon_y_1.setText("5300"); self.balloon_z_1.setText("220")
-        self.balloon_x_2.setText("6500"); self.balloon_y_2.setText("5600"); self.balloon_z_2.setText("320")
+        self.balloon_x_1.setText("05200"); self.balloon_y_1.setText("05300"); self.balloon_z_1.setText("220")
+        self.balloon_x_2.setText("06500"); self.balloon_y_2.setText("05600"); self.balloon_z_2.setText("320")
         #self.balloon_x_4.setText("7500"); self.balloon_y_4.setText("5300"); self.balloon_z_4.setText("220")
 
         #실제 데이터
@@ -199,7 +204,7 @@ class MyWindow(QWidget):
         R_G1 = QGroupBox('적 고사총 위치', self)  
         R_G1_box = QHBoxLayout()
 
-        R_G1_box_G1 = QGroupBox('좌표', self)
+        R_G1_box_G1 = QGroupBox('MGRS 좌표', self)
         R_G1_box_G1_box = QHBoxLayout()
 
         R_G1_box_G1_box_0 = QVBoxLayout()
@@ -219,7 +224,7 @@ class MyWindow(QWidget):
         R_G1_box_G1_box.addLayout(R_G1_box_G1_box_2)
         R_G1_box_G1.setLayout(R_G1_box_G1_box)
 
-        R_G1_box_G2 = QGroupBox('높이', self)
+        R_G1_box_G2 = QGroupBox('높이(m)', self)
         R_G1_box_G2_box = QVBoxLayout()
         for i in range(n_cannons):
             exec('R_G1_box_G2_box.addWidget(self.cannon_z_{})'.format(i))
@@ -237,7 +242,7 @@ class MyWindow(QWidget):
         R_G2 = QGroupBox('아군 K-6 위치', self)  
         R_G2_box = QHBoxLayout()
 
-        R_G2_box_G1 = QGroupBox('좌표', self)
+        R_G2_box_G1 = QGroupBox('MGRS 좌표', self)
         R_G2_box_G1_box = QHBoxLayout()
 
         R_G2_box_G1_box_0 = QVBoxLayout()
@@ -256,7 +261,7 @@ class MyWindow(QWidget):
         R_G2_box_G1_box.addLayout(R_G2_box_G1_box_2)
         R_G2_box_G1.setLayout(R_G2_box_G1_box)
 
-        R_G2_box_G2 = QGroupBox('높이', self)
+        R_G2_box_G2 = QGroupBox('높이(m)', self)
         R_G2_box_G2_box = QVBoxLayout()
         for i in range(n_balloons):
             exec('R_G2_box_G2_box.addWidget(self.balloon_z_{})'.format(i))
@@ -376,7 +381,6 @@ class MyWindow(QWidget):
 
         for i, alloc in enumerate(per):
             exec('self.balloon_alloc_{}.setText("적 고사총 기지 {}")'.format(i, alloc + 1))
-            exec('self.idland_{}.setText("{}")'.format(i, idland[i].round(2)))
             cannon = np.array(self.data['balloon'].iloc[i, :])
             enemy = np.array(self.data['cannon'].iloc[alloc, :])
 
@@ -392,19 +396,20 @@ class MyWindow(QWidget):
 
             theta_init = under * (9 / 1000)
                     
-            # def f(x):
-            #     return sb.optim(100, x[0], np.array([x[1],x[2]]), cannon, enemy, wind_tbl)
-            # def constr1(x):
-            #     x[1]
-            # def constr2(x):
-            #     90 - x[1]
-            # def constr3(x):
-            #     x[2]
-            # def constr4(x):
-            #     90 - x[2]
-            # minimum = fmin_cobyla(f, [theta_init, direc_init[0], direc_init[1]], [constr1, constr2, constr3, constr4], rhoend=1e-7)
-            # exec('self.idland_{}.setText(str(    int(round(    minimum[0] * 6400 / 360  , 0))  ))'.format(i))
-            # exec('self.actland_{}.setText(str( pa.vec2mil(minimum[1:]) ))'.format(i))
+            def f(x):
+                return sb.optim(100, x[0], np.array([x[1],x[2]]), cannon, enemy, wind_tbl)
+            def constr1(x):
+                x[1]
+            def constr2(x):
+                90 - x[1]
+            def constr3(x):
+                x[2]
+            def constr4(x):
+                90 - x[2]
+            minimum = fmin_cobyla(f, [theta_init, direc_init[0], direc_init[1]], [constr1, constr2, constr3, constr4], rhoend=1e-7)
+            print(minimum[1:])
+            exec('self.idland_{}.setText(str(    int(round(    minimum[0] * 6400 / 360  , 0))  ))'.format(i))
+            exec('self.actland_{}.setText(str( pa.vec2mil(minimum[1:]) ))'.format(i))
         self.ax.scatter(610,6400, color = 'red', s = 300); self.ax.text(610,6400, 'enemy')
         self.ax.scatter(3350,8000, color = 'red', s = 300); self.ax.text(3350,8000, 'enemy')
         self.ax.scatter(4900,7700, color = 'red', s = 300); self.ax.text(4900,7700, 'enemy')
@@ -415,7 +420,8 @@ class MyWindow(QWidget):
         limit = list(self.ax.get_xlim()) + list(self.ax.get_ylim())
         self.ax.imshow(img, extent=limit)   
         
-
+        
+        #사거리 내의 적 고사포에 점선을 연결해 주기
         available = sb.allocate2(self.data['balloon'], self.data['cannon'])
         for i, alist in enumerate(available):
             print(alist)
@@ -429,7 +435,7 @@ class MyWindow(QWidget):
     def lineEditChanged(self, widget, i, j, mat):
         try:
             mat.loc[i,j] = int(widget.text())
-
+            print(mat)
         except:
             print('입력이 없음')
       
