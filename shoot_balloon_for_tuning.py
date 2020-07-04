@@ -141,29 +141,29 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax ,
         total_moves = 0
         while idx_now > 0:
             h_down = h_now - wind_h[idx_now - 1] #수직 하강 거리 계산
-            print('{}에서 {}까지 하강'.format(h_now, wind_h[idx_now - 1]))
+            #print('{}에서 {}까지 하강'.format(h_now, wind_h[idx_now - 1]))
             one_step_old = h_down * atan #전진 거리. 풍향의 영향이 없을 때의 방향을 기준으로 거리를 계산함
             #print('기존의 전진 거리:', one_step)
 
             wind_vec = np.array(wind_tbl.vec[idx_now-1]) #현 고도에서의 풍향 벡터 가져오기
-            print('바람의 방향:', wind_vec)
+            #print('바람의 방향:', wind_vec)
             wind_vel = wind_tbl.wind_vel[idx_now-1] #현 고도에서의 풍속값 가져오기
             
             cossim = cos_sim(direc_now, wind_vec) #포탄의 현재 진행 방향(좌우) 벡터와 바람 방향 벡터의 코사인 유사도
             rbeta = np.random.beta(beta_1,beta_2) #바람의 영향 반영 비율을 결정하는 랜덤 넘버. 베타분포의 두 번째 모수가 첫 번째 모수보다 많이 클수록 바람의 영향이 작아짐
-            vel_power = (100 + cossim * wind_vel * (1 + rbeta) )/100 #풍속의 영향력을 결정하는 수. 포탄의 진행 방향과 바람의 방향의 유사도의 절댓값이 클수록(방향이 매우 비슷하거나, 또는 거의 반대 방향일 경우) 풍속의 영향력이 커짐.
-            print('rbeta:', rbeta); print('vel_power:', vel_power)
+            vel_power = 1 + (wind_vel / 60 * cossim * (1 + rbeta)) #풍속의 영향력을 결정하는 수. 포탄의 진행 방향과 바람의 방향의 유사도의 절댓값이 클수록(방향이 매우 비슷하거나, 또는 거의 반대 방향일 경우) 풍속의 영향력이 커짐.
+            #print('rbeta:', rbeta); print('vel_power:', vel_power)
             one_step = one_step_old * vel_power   #풍속의 영향력을 반영하여 전진거리 수정
             total_moves += one_step
             #print('풍속과 풍향에 의해 수정된 전진거리:', one_step)
             
             if abs(cossim) != 1: #바람의 방향이 포탄의 진행방향과 완전히 같거나 정 반대이면, 포탄 진행방향은 변함이 없음
-                print('기존의 진행 방향:', direc_now)
-                w = rbeta * (100 + 60 * cossim)/100
-                print('w:', w)
+                #print('기존의 진행 방향:', direc_now)
+                w = rbeta
+                #print('w:', w)
                 direc_now = (1-w) * direc_now + w * wind_vec.astype('float64') #포탄의 현재 진행 방향을 바람의 방향 쪽으로 w만큼 수정
                 direc_now =  (direc_now ) / la.norm(direc_now) #unit vector로 만들기
-                print('수정된 방향:', direc_now, '\n')
+                #print('수정된 방향:', direc_now, '\n')
             xy_now = xy_now + direc_now * one_step #위에서 구한 전진거리와 진행방향을 이용해 포탄을 전진시킴
 
 
@@ -180,7 +180,7 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax ,
         ax.scatter(xy_now[0], xy_now[1], s = 5, color = 'magenta') #착탄지점 그래프에 그리기
         for i in range(len(x_path)-1):
             color_code = (i+1) / len(x_path)
-            ax.plot([x_path[i], x_path[i+1]], [y_path[i], y_path[i+1]], color = plt.cm.rainbow(color_code))
+            ax.plot([x_path[i], x_path[i+1]], [y_path[i], y_path[i+1]], color = plt.cm.rainbow(color_code), alpha=0.3)
 
     #발사 n회 완료. 낙탄점의 중심점 구하기. 낙탄점을 모두 둘러싸는 최소크기의 원을 구하고 그 중심점을 낙탄점의 중심점으로 삼음.
     

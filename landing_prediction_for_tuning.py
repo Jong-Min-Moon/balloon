@@ -23,6 +23,7 @@ winds_idx = [ (0,200), (201,500), (501,1000), (1001, 1500), (1501, 2000), (2001,
 
 
 
+
 class MyWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -31,6 +32,7 @@ class MyWindow(QWidget):
         self.beta_1 = 2
         self.beta_2 = 15
 
+          
     def setupUI(self):
         self.setGeometry(600, 200, 1200, 600)
         self.setWindowTitle("적 고사포 낙탄 예측 tuning")
@@ -392,6 +394,7 @@ class MyWindow(QWidget):
             exec('self.idland_{}.setText("{}")'.format(i, idland[i].round(2)))
             exec('self.actland_{}.setText("{}")'.format(i, actland[i].round(2)))
             self.resultDisplay.append("{} - {}".format(round(d_wind[i]), round(total_moves[i])))
+        self.ax.axis([0,7000,0,7000])
         self.canvas.draw()
 
 
@@ -409,6 +412,8 @@ class MyWindow(QWidget):
             mat.iloc[i,j] = int(widget.text())
         except:
             print('입력이 없음')
+
+  
 
 
 if __name__ == "__main__":
