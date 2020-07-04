@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import QRegExp
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import shoot_balloon as sb
@@ -12,15 +13,10 @@ from numpy import linalg as la
 from scipy.optimize import fmin_cobyla
 
 n_cannons = 5
-n_balloons = 3
-n_winds = 12
-h_min = 0
-h_max = 7000
-winds = np.linspace(h_min, h_max, num = n_winds + 1)
+n_K6s = 3
+winds = np.linspace(0, 8000, num = 12 + 1) #고도 0미터부터 8000미터까지의 구간을 아래와 같이 12개 구간으로 나눔
 winds_idx = [ (0,200), (201,500), (501,1000), (1001, 1500), (1501, 2000), (2001,2500), (2501,3000), (3001,4000), (4001,5000), (5001,6000), (6001,7000), (7001,8000) ]
 
-
-ranges = pd.DataFrame({'ran': [5000, 5000, 5000, 5000, 5000]})
 
 
 class MyWindow(QWidget):
@@ -36,12 +32,12 @@ class MyWindow(QWidget):
         #initialize data matrix
         self.wind_dir = pd.DataFrame({'wind_dir': list(range(6400)) ,
             'vec': [np.dot(sb.rotate_matrix( i * np.pi / 6400), np.array([0,1]))for i in range(6400)] })
-        self.int_input_widgets = {'cannon_z' : n_cannons, 'balloon_z' : n_balloons}
-        self.MGRS_input_widgets = {'cannon_x' : n_cannons, 'cannon_y':n_cannons, 'balloon_x':n_balloons, 'balloon_y':n_balloons}
+        self.int_input_widgets = {'cannon_z' : n_cannons, 'K6_z' : n_K6s}
+        self.MGRS_input_widgets = {'cannon_x' : n_cannons, 'cannon_y':n_cannons, 'K6_x':n_K6s, 'K6_y':n_K6s}
         self.data = {}
         self.data['cannon'] = pd.DataFrame(np.zeros((n_cannons, 3)), columns = ['cannon_x', 'cannon_y', 'cannon_z'])
-        self.data['balloon'] = pd.DataFrame(np.zeros((n_balloons, 3)), columns = ['balloon_x', 'balloon_y', 'balloon_z'])
-        self.data['wind'] = pd.DataFrame(np.zeros((n_winds, 2)), index =winds_idx,  columns = ['wind_dir', 'wind_vel'])
+        self.data['K6'] = pd.DataFrame(np.zeros((n_K6s, 3)), columns = ['K6_x', 'K6_y', 'K6_z'])
+        self.data['wind'] = pd.DataFrame(np.zeros((12, 2)), index =winds_idx,  columns = ['wind_dir', 'wind_vel'])
  
         self.wind_dir_only = QIntValidator(0, 6399, self)
         self.int_only = QIntValidator(0,99999,self)
@@ -54,27 +50,33 @@ class MyWindow(QWidget):
        
         
         #고사포와 풍선
-       
-        self.balloon_x_label = QLabel('좌표')
-        self.balloon_z_label = QLabel('높이')
 
-        self.LineEdit_list_cannon_balloon = {}
+        def setQlineEditLength(QLE, nchar): #QlineEdit의 너비를 조절하는 함수
+            fm = QLE.fontMetrics()
+            m = QLE.textMargins()
+            c = QLE.contentsMargins()
+            w = nchar * 1.3 * fm.width('x')+m.left()+m.right()+c.left()+c.right()
+            QLE.setMaximumWidth(w + 8)
+
+        self.LineEdit_list_cannon_K6 = {}
         for obj_name in self.int_input_widgets: #0-99999의 값을 input으로 받는 입력창 widget을 생성(적 고사포와 풍선의 높이)
             for i in range(self.int_input_widgets[obj_name]):
                 exec('self.{}_{} = QLineEdit()'.format(obj_name, i))
                 exec('self.{}_{}.setValidator(self.int_only)'.format(obj_name, i))
-                exec('self.LineEdit_list_cannon_balloon["self.{}_{}"] = self.{}_{}'.format(obj_name, i, obj_name, i))
+                exec('setQlineEditLength(self.{}_{}, 5)'.format(obj_name, i))
+                exec('self.LineEdit_list_cannon_K6["self.{}_{}"] = self.{}_{}'.format(obj_name, i, obj_name, i))
         for obj_name in self.MGRS_input_widgets: #5자리 숫자를 input으로 받는 입력창 widget을 생성(적 고사포와 풍선의 MGRS 좌표)
             for i in range(self.MGRS_input_widgets[obj_name]):
                 exec('self.{}_{} = QLineEdit()'.format(obj_name, i))
                 exec('self.{}_{}.setValidator(self.MGRSvalid)'.format(obj_name, i))
-                exec('self.LineEdit_list_cannon_balloon["self.{}_{}"] = self.{}_{}'.format(obj_name, i, obj_name, i))
-        for widget in self.LineEdit_list_cannon_balloon: #위에서 생성한 위젯에 입력 함수를 할당
+                exec('setQlineEditLength(self.{}_{}, 5)'.format(obj_name, i))
+                exec('self.LineEdit_list_cannon_K6["self.{}_{}"] = self.{}_{}'.format(obj_name, i, obj_name, i))
+        for widget in self.LineEdit_list_cannon_K6: #위에서 생성한 위젯에 입력 함수를 할당
             inputs = widget.replace('self.', '').split('_')
             i = int(inputs[2])
             j = inputs[0] + '_' + inputs[1]
             mat = self.data[inputs[0]]
-            self.LineEdit_list_cannon_balloon[widget].textChanged.connect(lambda a = widget, this_widget = self.LineEdit_list_cannon_balloon[widget], this_i = i, this_j = j, this_mat = mat: self.lineEditChanged(this_widget, this_i, this_j, this_mat ))
+            self.LineEdit_list_cannon_K6[widget].textChanged.connect(lambda a = widget, this_widget = self.LineEdit_list_cannon_K6[widget], this_i = i, this_j = j, this_mat = mat: self.lineEditChanged(this_widget, this_i, this_j, this_mat ))
           
         
 
@@ -83,8 +85,8 @@ class MyWindow(QWidget):
         #고사총과 풍선 이름
         for i in range(n_cannons):
             exec('self.cannon_label_{} = QLabel("적 고사총 기지 {} ")'.format(i,i+1))
-        for i in range(n_balloons):
-            exec('self.balloon_label_{} = QLabel("아군 K-6 ({}) ")'.format(i,i+1))
+        for i in range(n_K6s):
+            exec('self.K6_label_{} = QLabel("아군 K-6 ({}) ")'.format(i,i+1))
 
 
 
@@ -95,10 +97,12 @@ class MyWindow(QWidget):
             exec('self.height_label_{} = QLabel("{}-{}")'.format(i, idx[0], idx[1]))
         
         self.wind_dir_list = {}
-        self.wind_dir_label = QLabel('풍향')
-        for i in range(n_winds):
+        self.wind_dir_label = QLabel('풍향(mil)')
+        for i in range(12):
             exec('self.wind_dir_{} = QLineEdit()'.format(i))
             exec("self.wind_dir_list['self.wind_dir_{}'] = self.wind_dir_{}".format(i,i))
+            exec('setQlineEditLength(self.wind_dir_{}, 5.4)'.format(i))
+            exec('self.wind_dir_{}.setValidator(self.wind_dir_only)'.format(i))
         
         for widget in self.wind_dir_list:
             inputs = widget.replace('self.', '').split('_')
@@ -109,15 +113,17 @@ class MyWindow(QWidget):
 
         self.wind_vel_list = {}
         self.wind_vel_label = QLabel('풍속')
-        for i in range(n_winds):
+        for i in range(12):
             exec('self.wind_vel_{} = QLineEdit()'.format(i))
             exec("self.wind_vel_list['self.wind_vel_{}'] = self.wind_vel_{}".format(i,i))
+            exec('setQlineEditLength(self.wind_vel_{}, 4.4)'.format(i))
+            exec('self.wind_vel_{}.setValidator(self.int_only)'.format(i))
 
         #대포 - 풍선 매칭
-        for i in range(n_balloons):
+        for i in range(n_K6s):
             exec('self.cannon_alloc_{} = QLabel("아군 K-6 ({})")'.format(i, i+1))
             exec('self.alloc_{} = QLabel("-----")'.format(i))
-            exec('self.balloon_alloc_{} = QLabel("적 고사총 기지 ")'.format(i))
+            exec('self.K6_alloc_{} = QLabel("적 고사총 기지 ")'.format(i))
             exec('self.idland_{} = QLabel("")'.format(i))
             exec('self.actland_{} = QLabel("")'.format(i))
 
@@ -145,18 +151,18 @@ class MyWindow(QWidget):
         
         #아군 K-6
         #표시
-        self.balloon_x_0.setText("02500"); self.balloon_y_0.setText("03900"); self.balloon_z_0.setText("150")
-        #self.balloon_x_1.setText("3200"); self.balloon_y_1.setText("5200"); self.balloon_z_1.setText("130")
-        self.balloon_x_1.setText("05200"); self.balloon_y_1.setText("05300"); self.balloon_z_1.setText("220")
-        self.balloon_x_2.setText("06500"); self.balloon_y_2.setText("05600"); self.balloon_z_2.setText("320")
-        #self.balloon_x_4.setText("7500"); self.balloon_y_4.setText("5300"); self.balloon_z_4.setText("220")
+        self.K6_x_0.setText("02500"); self.K6_y_0.setText("03900"); self.K6_z_0.setText("150")
+        #self.K6_x_1.setText("3200"); self.K6_y_1.setText("5200"); self.K6_z_1.setText("130")
+        self.K6_x_1.setText("05200"); self.K6_y_1.setText("05300"); self.K6_z_1.setText("220")
+        self.K6_x_2.setText("06500"); self.K6_y_2.setText("05600"); self.K6_z_2.setText("320")
+        #self.K6_x_4.setText("7500"); self.K6_y_4.setText("5300"); self.K6_z_4.setText("220")
 
         #실제 데이터
-        self.data['balloon'].iloc[0,:] = [2500, 3900, 150]
-        #self.data['balloon'].iloc[1,:] = [3200, 5200, 130]
-        self.data['balloon'].iloc[1,:] = [5200, 5300, 220]
-        self.data['balloon'].iloc[2,:] = [6500, 5600, 320]
-        #self.data['balloon'].iloc[4,:] = [7500, 5300, 220]
+        self.data['K6'].iloc[0,:] = [2500, 3900, 150]
+        #self.data['K6'].iloc[1,:] = [3200, 5200, 130]
+        self.data['K6'].iloc[1,:] = [5200, 5300, 220]
+        self.data['K6'].iloc[2,:] = [6500, 5600, 320]
+        #self.data['K6'].iloc[4,:] = [7500, 5300, 220]
 
         #바람
             #표시
@@ -189,116 +195,12 @@ class MyWindow(QWidget):
 
 
  
-
+#########################################################################################################
+####################################### LAYOUT ##########################################################
         
 
         ##########################################################
         #left layout : 그림이 나오는 곳
-        leftLayout = QVBoxLayout()
-        leftLayout.addWidget(self.canvas)
-        ##########################################################
-        # right Layout : 입력창이 있는 곳
-        rightLayout = QVBoxLayout()
-
-        # R_G1: 발사대
-        R_G1 = QGroupBox('적 고사총 위치', self)  
-        R_G1_box = QHBoxLayout()
-
-        R_G1_box_G1 = QGroupBox('MGRS 좌표', self)
-        R_G1_box_G1_box = QHBoxLayout()
-
-        R_G1_box_G1_box_0 = QVBoxLayout()
-        for i in range(n_cannons):
-            exec('R_G1_box_G1_box_0.addWidget(self.cannon_label_{})'.format(i))
-
-
-        R_G1_box_G1_box_1 = QVBoxLayout()
-        for i in range(n_cannons):
-            exec('R_G1_box_G1_box_1.addWidget(self.cannon_x_{})'.format(i))
-        R_G1_box_G1_box_2 = QVBoxLayout()
-        for i in range(n_cannons):
-            exec('R_G1_box_G1_box_2.addWidget(self.cannon_y_{})'.format(i))
-            
-        R_G1_box_G1_box.addLayout(R_G1_box_G1_box_0)
-        R_G1_box_G1_box.addLayout(R_G1_box_G1_box_1)
-        R_G1_box_G1_box.addLayout(R_G1_box_G1_box_2)
-        R_G1_box_G1.setLayout(R_G1_box_G1_box)
-
-        R_G1_box_G2 = QGroupBox('높이(m)', self)
-        R_G1_box_G2_box = QVBoxLayout()
-        for i in range(n_cannons):
-            exec('R_G1_box_G2_box.addWidget(self.cannon_z_{})'.format(i))
-        R_G1_box_G2.setLayout(R_G1_box_G2_box)
-
- 
-
-        R_G1_box.addWidget(R_G1_box_G1)
-        R_G1_box.addWidget(R_G1_box_G2)
-       
-        R_G1.setLayout(R_G1_box)
-
-
-        # R_G2: 풍선
-        R_G2 = QGroupBox('아군 K-6 위치', self)  
-        R_G2_box = QHBoxLayout()
-
-        R_G2_box_G1 = QGroupBox('MGRS 좌표', self)
-        R_G2_box_G1_box = QHBoxLayout()
-
-        R_G2_box_G1_box_0 = QVBoxLayout()
-        for i in range(n_balloons):
-            exec('R_G2_box_G1_box_0.addWidget(self.balloon_label_{})'.format(i))
-
-        R_G2_box_G1_box_1 = QVBoxLayout()
-        for i in range(n_balloons):
-            exec('R_G2_box_G1_box_1.addWidget(self.balloon_x_{})'.format(i))
-        R_G2_box_G1_box_2 = QVBoxLayout()
-        for i in range(n_balloons):
-            exec('R_G2_box_G1_box_2.addWidget(self.balloon_y_{})'.format(i))
-        R_G2_box_G1_box.addLayout(R_G2_box_G1_box_0)
-        
-        R_G2_box_G1_box.addLayout(R_G2_box_G1_box_1)
-        R_G2_box_G1_box.addLayout(R_G2_box_G1_box_2)
-        R_G2_box_G1.setLayout(R_G2_box_G1_box)
-
-        R_G2_box_G2 = QGroupBox('높이(m)', self)
-        R_G2_box_G2_box = QVBoxLayout()
-        for i in range(n_balloons):
-            exec('R_G2_box_G2_box.addWidget(self.balloon_z_{})'.format(i))
-        R_G2_box_G2.setLayout(R_G2_box_G2_box)
-
-        R_G2_box.addWidget(R_G2_box_G1)
-        R_G2_box.addWidget(R_G2_box_G2)
-        R_G2.setLayout(R_G2_box)
-        
-
-        #R3 : 바람
-        R3 = QGroupBox('고도별 풍향과 풍속', self)
-        
-        R3box = QHBoxLayout()
-
-        R3box_1 = QVBoxLayout()
-        R3box_1.addWidget(self.height_label)
-        for i in range(n_winds):
-            exec('R3box_1.addWidget(self.height_label_{})'.format(i))
-    
-        R3box_2 = QVBoxLayout()
-        R3box_2.addWidget(self.wind_dir_label)
-        for i in range(n_winds):
-            exec('R3box_2.addWidget(self.wind_dir_{})'.format(i))
-            exec('self.wind_dir_{}.setValidator(self.wind_dir_only)'.format(i))
-
-        
-        R3box_3 = QVBoxLayout()
-        R3box_3.addWidget(self.wind_vel_label)
-        for i in range(n_winds):
-            exec('R3box_3.addWidget(self.wind_vel_{})'.format(i))
-            exec('self.wind_vel_{}.setValidator(self.int_only)'.format(i))
-        R3box.addLayout(R3box_1)
-        R3box.addLayout(R3box_2)
-        R3box.addLayout(R3box_3)
-        
-        R3.setLayout(R3box)
 
         # R_G4: 발사 결과
         R_G4 = QGroupBox('발사 결과', self)  
@@ -307,14 +209,14 @@ class MyWindow(QWidget):
         R_G4_box_G1 = QGroupBox('아군 K6 - 적 고사총 기지 매칭', self)
         R_G4_box_G1_box = QHBoxLayout()
         R_G4_box_G1_box_1 = QVBoxLayout()
-        for i in range(n_balloons):
+        for i in range(n_K6s):
             exec('R_G4_box_G1_box_1.addWidget(self.cannon_alloc_{})'.format(i))
         R_G4_box_G1_box_2 = QVBoxLayout()
-        for i in range(n_balloons):
+        for i in range(n_K6s):
             exec('R_G4_box_G1_box_2.addWidget(self.alloc_{})'.format(i))
         R_G4_box_G1_box_3 = QVBoxLayout()
-        for i in range(n_balloons):
-            exec('R_G4_box_G1_box_3.addWidget(self.balloon_alloc_{})'.format(i))
+        for i in range(n_K6s):
+            exec('R_G4_box_G1_box_3.addWidget(self.K6_alloc_{})'.format(i))
 
         R_G4_box_G1_box.addLayout(R_G4_box_G1_box_1)
         R_G4_box_G1_box.addLayout(R_G4_box_G1_box_2)
@@ -323,13 +225,13 @@ class MyWindow(QWidget):
 
         R_G4_box_G2 = QGroupBox('사각(mil)', self)
         R_G4_box_G2_box = QVBoxLayout()
-        for i in range(n_balloons):
+        for i in range(n_K6s):
             exec('R_G4_box_G2_box.addWidget(self.idland_{})'.format(i))
         R_G4_box_G2.setLayout(R_G4_box_G2_box)
 
         R_G4_box_G3 = QGroupBox('편각(mil)', self)
         R_G4_box_G3_box = QVBoxLayout()
-        for i in range(n_balloons):
+        for i in range(n_K6s):
             exec('R_G4_box_G3_box.addWidget(self.actland_{})'.format(i))
         R_G4_box_G3.setLayout(R_G4_box_G3_box)
 
@@ -338,16 +240,112 @@ class MyWindow(QWidget):
         R_G4_box.addWidget(R_G4_box_G2)
         R_G4_box.addWidget(R_G4_box_G3)
         R_G4.setLayout(R_G4_box)
+        
+        
+        leftLayout = QVBoxLayout()
+        leftLayout.addWidget(self.canvas, 5)
+        leftLayout.addWidget(R_G4, 1)
+
+        ##########################################################
+        # right Layout : 입력창이 있는 곳
+        rightLayout = QVBoxLayout()
+
+
+        # R_G1: 적 고사총 위치
+        R_G1 = QGroupBox('적 고사총 위치', self)  
+        R_G1_box = QHBoxLayout()
+
+        R_G1_box_G1 = QGroupBox('MGRS 좌표', self)
+        R_G1_box_G1_box = QVBoxLayout()
+        
+        R_G1_box_G2 = QGroupBox('높이(m)', self)
+        R_G1_box_G2_box = QVBoxLayout()
+
+        for i in range(n_cannons):
+            exec('R_G1_box_G1_box_{} = QHBoxLayout()'.format(i))
+            exec('R_G1_box_G1_box_{}.addWidget(self.cannon_label_{})'.format(i, i)) #'적 고사총 기지'
+            exec('R_G1_box_G1_box_{}.addWidget(self.cannon_x_{})'.format(i, i)) # x좌표
+            exec('R_G1_box_G1_box_{}.addWidget(self.cannon_y_{})'.format(i, i)) # y좌표
+            exec('R_G1_box_G1_box.addLayout(R_G1_box_G1_box_{})'.format(i))
+            exec('R_G1_box_G2_box.addWidget(self.cannon_z_{})'.format(i)) #높이
+        R_G1_box_G1.setLayout(R_G1_box_G1_box)
+        R_G1_box_G2.setLayout(R_G1_box_G2_box)     
+
+        R_G1_box.addWidget(R_G1_box_G1, 4)
+        R_G1_box.addWidget(R_G1_box_G2, 1)
+       
+        R_G1.setLayout(R_G1_box)
+
+
+        # R_G2: 아군 K-6
+        R_G2 = QGroupBox('아군 K-6 위치', self)
+        R_G2_box = QHBoxLayout()
+
+        R_G2_box_G1 = QGroupBox('MGRS 좌표', self)
+        R_G2_box_G1_box = QVBoxLayout()
+
+        R_G2_box_G2 = QGroupBox('높이(m)', self)
+        R_G2_box_G2_box = QVBoxLayout()
+
+        for i in range(n_K6s):
+            exec('R_G2_box_G1_box_{} = QHBoxLayout()'.format(i))
+            exec('R_G2_box_G1_box_{}.addWidget(self.K6_label_{})'.format(i, i)) #'적 고사총 기지'
+            exec('R_G2_box_G1_box_{}.addWidget(self.K6_x_{})'.format(i, i)) # x좌표
+            exec('R_G2_box_G1_box_{}.addWidget(self.K6_y_{})'.format(i, i)) # y좌표
+            exec('R_G2_box_G1_box.addLayout(R_G2_box_G1_box_{})'.format(i))      
+            exec('R_G2_box_G2_box.addWidget(self.K6_z_{})'.format(i,i))
+        
+        R_G2_box_G1.setLayout(R_G2_box_G1_box)
+        R_G2_box_G2.setLayout(R_G2_box_G2_box)
+
+        R_G2_box.addWidget(R_G2_box_G1, 4)
+        R_G2_box.addWidget(R_G2_box_G2, 1)
+
+        R_G2.setLayout(R_G2_box)
+        
+
+        #R3 : 바람
+        R3 = QGroupBox('고도별 풍향과 풍속', self)
+        R3_box = QHBoxLayout()
+
+        R3_box_G1 = QGroupBox('고도(m)', self)
+        R3_box_G1_box = QVBoxLayout()
+
+        R3_box_G2 = QGroupBox('풍향(mil)', self)
+        R3_box_G2_box = QVBoxLayout()
+
+        R3_box_G3 = QGroupBox('풍속(m/s)', self)
+        R3_box_G3_box = QVBoxLayout()
+        for i in range(12):
+            exec('R3_box_G1_box.addWidget(self.height_label_{})'.format(i))#고도
+            exec('R3_box_G2_box.addWidget(self.wind_dir_{})'.format(i))#풍향 
+            exec('R3_box_G3_box.addWidget(self.wind_vel_{})'.format(i))#풍속
+        R3_box_G1.setLayout(R3_box_G1_box)
+        R3_box_G2.setLayout(R3_box_G2_box)
+        R3_box_G3.setLayout(R3_box_G3_box)
+
+        R3_box.addWidget(R3_box_G1, 3)
+        R3_box.addWidget(R3_box_G2, 2)
+        R3_box.addWidget(R3_box_G3, 2)
+
+        R3.setLayout(R3_box)
+
+
+
+
+
+
+
 
         
 
         rightLayout.addWidget(R_G1)
-        rightLayout.addStretch(3)
+        rightLayout.addStretch(2)
         rightLayout.addWidget(R_G2)
-        rightLayout.addStretch(3)
+        rightLayout.addStretch(2)
         rightLayout.addWidget(R3)
-        rightLayout.addStretch(3)
-        rightLayout.addWidget(R_G4)
+        rightLayout.addStretch(2)
+     
         rightLayout.addWidget(self.pushButton)
      
 
@@ -360,8 +358,8 @@ class MyWindow(QWidget):
 
 
         layout = QHBoxLayout()
-        layout.addLayout(leftLayout)
-        layout.addLayout(rightLayout)
+        layout.addLayout(leftLayout, 3)
+        layout.addLayout(rightLayout, 1)
         
         layout.setStretchFactor(leftLayout, 1)
         layout.setStretchFactor(rightLayout, 0)
@@ -369,19 +367,19 @@ class MyWindow(QWidget):
         self.setLayout(layout)
 
     def pushButtonClicked(self):
-        #if sum(self.data['cannon'].cannon_z >= self.data['balloon'].balloon_z ) > 0:
+        #if sum(self.data['cannon'].cannon_z >= self.data['K6'].K6_z ) > 0:
             #QMessageBox.about(self, "오류", "포의 고도가 풍선의 고도보다 높거나 같으면 발사할 수 없습니다")
         #else:
         wind_tbl = pd.merge(self.data['wind'], self.wind_dir, how = 'left', on = 'wind_dir').set_index(self.data['wind'].index)
         self.ax.clear()
         self.ax.axis('off')
-        per, idland, actland = pa.drawplot(100,  self.data['balloon'], self.data['cannon'],self.data['wind'], self.ax, ranges)
+        per, idland, actland = pa.drawplot(100,  self.data['K6'], self.data['cannon'],self.data['wind'], self.ax)
 
 
 
         for i, alloc in enumerate(per):
-            exec('self.balloon_alloc_{}.setText("적 고사총 기지 {}")'.format(i, alloc + 1))
-            cannon = np.array(self.data['balloon'].iloc[i, :])
+            exec('self.K6_alloc_{}.setText("적 고사총 기지 {}")'.format(i, alloc + 1))
+            cannon = np.array(self.data['K6'].iloc[i, :])
             enemy = np.array(self.data['cannon'].iloc[alloc, :])
 
 
@@ -422,11 +420,11 @@ class MyWindow(QWidget):
         
         
         #사거리 내의 적 고사포에 점선을 연결해 주기
-        available = sb.allocate2(self.data['balloon'], self.data['cannon'])
+        available = sb.allocate2(self.data['K6'], self.data['cannon'])
         for i, alist in enumerate(available):
             print(alist)
             for aenemy in alist:
-                x = self.data['balloon'].iloc[i,:]
+                x = self.data['K6'].iloc[i,:]
                 y = self.data['cannon'].iloc[aenemy,:]
                 self.ax.plot( [x[0], y[0]], [x[1], y[1]], linestyle = '--', color = 'royalblue') #peak to ideal landing
         self.canvas.draw()
@@ -451,6 +449,12 @@ if __name__ == "__main__":
 
 
     app = QApplication(sys.argv)
+
+    id = QFontDatabase.addApplicationFont("NanumBarunGothicBold.ttf")
+    _fontstr = QFontDatabase.applicationFontFamilies(id)[0]
+    font = QFont(_fontstr, 12)
+    app.setFont(font)
+
     window = MyWindow()
     window.show()
     app.exec_()

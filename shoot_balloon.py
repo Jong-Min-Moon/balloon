@@ -190,8 +190,8 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
             #print('풍속에 의해 수정된 전진 거리: {}'.format(one_step))
             if abs(cossim) != 1:
                 #풍향과 풍속을 고려하여 방향 수정
-                w = rbeta * vel_power 
-                direc_now = (1-w) * direc_now + w * wind_vec.astype('float64')
+
+                direc_now = (1-rbeta) * direc_now + rbeta * wind_vec.astype('float64')
                 direc_now =  (direc_now ) / la.norm(direc_now) #unit vector로 만들기
                 #print('바람에 의해 수정된 방향: {}'.format(direc_now))  
             #else:

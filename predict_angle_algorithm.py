@@ -50,7 +50,7 @@ def ang2coord(fire, theta, direc, ran):
     balloon_xyz = np.append((fire + d * direc), balloon_z)
     return balloon_xyz
 
-def drawplot(n_iter, cannons, balloons, winds, ax, ranges):
+def drawplot(n_iter, cannons, balloons, winds, ax):
     
     wind_tbl = pd.merge(winds, wind_dir, how = 'left', on = 'wind_dir').set_index(winds.index)
     print(wind_tbl)
@@ -59,10 +59,6 @@ def drawplot(n_iter, cannons, balloons, winds, ax, ranges):
     per = allocate(cannons, balloons)
     print(list(zip(range(len(cannons)), per)))
     for i, comb in enumerate(zip(range(len(cannons)), per)):
-        print('{}번째 발사. 포탄과 풍선 조합: {}'.format(i, comb))
-        print('1', cannons.iloc[comb[0], :])
-        print('2', balloons.iloc[comb[1], :])
-        print('3',  ranges.iloc[i,0])
         this_idland, this_actland = shoot( n_iter,  np.array(cannons.iloc[comb[0], :]), np.array(balloons.iloc[comb[1], :]), wind_tbl,  ax, i)
         idland.append(this_idland); actland.append(this_actland)
     return per, idland, actland
