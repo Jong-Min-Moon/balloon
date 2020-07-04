@@ -299,23 +299,19 @@ class MyWindow(QWidget):
         R_G2_box = QHBoxLayout()
 
         R_G2_box_G1 = QGroupBox('MGRS 좌표', self)
-        R_G2_box_G1_box = QHBoxLayout()
+        R_G2_box_G1_box = QVBoxLayout()
 
-        R_G2_box_G1_box_0 = QVBoxLayout()
         for i in range(n_balloons):
-            exec('R_G2_box_G1_box_0.addWidget(self.balloon_label_{})'.format(i))
-
-        R_G2_box_G1_box_1 = QVBoxLayout()
-        for i in range(n_balloons):
-            exec('R_G2_box_G1_box_1.addWidget(self.balloon_x_{})'.format(i))
-        R_G2_box_G1_box_2 = QVBoxLayout()
-        for i in range(n_balloons):
-            exec('R_G2_box_G1_box_2.addWidget(self.balloon_y_{})'.format(i))
-        R_G2_box_G1_box.addLayout(R_G2_box_G1_box_0)
-        
-        R_G2_box_G1_box.addLayout(R_G2_box_G1_box_1)
-        R_G2_box_G1_box.addLayout(R_G2_box_G1_box_2)
+            exec('R_G2_box_G1_box_{} = QHBoxLayout()'.format(i))
+            exec('R_G2_box_G1_box_{}.addWidget(self.balloon_label_{})'.format(i, i)) #'적 고사총 기지'
+            exec('R_G2_box_G1_box_{}.addWidget(self.balloon_x_{})'.format(i, i)) # x좌표
+            exec('R_G2_box_G1_box_{}.addWidget(self.balloon_y_{})'.format(i, i)) # y좌표
+            exec('R_G2_box_G1_box.addLayout(R_G2_box_G1_box_{})'.format(i))      
         R_G2_box_G1.setLayout(R_G2_box_G1_box)
+
+
+
+
 
         R_G2_box_G2 = QGroupBox('높이(m)', self)
         R_G2_box_G2_box = QVBoxLayout()
