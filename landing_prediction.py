@@ -12,7 +12,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import QRegExp
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas #GUI앱에 matplotlib으로 그래프를 그리기 위한 패키지
-
+import qtmodern.styles
+import qtmodern.windows
 
 import shoot_balloon as sb #낙탄지점 예측 알고리즘이 들어있는 코드
 
@@ -205,7 +206,8 @@ class MyWindow(QWidget):
 
         
 
-        ##########################################################
+#########################################################################################################
+####################################### LAYOUT ##########################################################
         #left layout : 그림이 나오는 곳
 
                 # R_G4: 발사 결과
@@ -421,9 +423,14 @@ class MyWindow(QWidget):
 if __name__ == "__main__":
 
     
-
     app = QApplication(sys.argv)
-    app.setFont(QFont("NanumGothic", 12))
+    
+    id = QFontDatabase.addApplicationFont("NanumBarunGothic.ttf")
+    _fontstr = QFontDatabase.applicationFontFamilies(id)[0]
+    font = QFont(_fontstr, 12)
+    app.setFont(font)
+
     window = MyWindow()
+    #qtmodern.styles.light(app)
     window.show()
     app.exec_()
