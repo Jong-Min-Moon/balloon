@@ -31,7 +31,8 @@ class MyWindow(QWidget):
         self.n_iter = 1
         self.beta_1 = 2
         self.beta_2 = 15
-
+        self.divider = 1
+        self.drawlines = True
           
     def setupUI(self):
         self.setGeometry(600, 200, 1200, 600)
@@ -181,6 +182,29 @@ class MyWindow(QWidget):
         TUNING_beta_2.addWidget(self.beta_2_input)
         TUNING.addLayout(TUNING_beta_2)
 
+        #divider
+        self.divider_input_label = QLabel("divider")
+        self.divider_input = QLineEdit()
+        self.divider_input.setValidator(self.int_only)
+        setQlineEditLength(self.divider_input, 3)
+        self.divider_input.textChanged.connect( self.divider_changed )
+
+        TUNING_divider = QHBoxLayout()
+        TUNING_divider.addWidget(self.divider_input_label)
+        TUNING_divider.addWidget(self.divider_input)
+        TUNING.addLayout(TUNING_divider)
+
+        Tuning_drawlines_groupBox = QGroupBox("궤적 그리기", self)
+        Tuning_drawlines_groupBox_layout = QVBoxLayout()
+        self.Tuning_drawlines_yes = QRadioButton("On", self)
+        self.Tuning_drawlines_yes.clicked.connect(self.radioButtonClicked)
+        self.Tuning_drawlines_yes.setChecked(True)
+        self.Tuning_drawlines_no = QRadioButton("Off", self)
+        self.Tuning_drawlines_no.clicked.connect(self.radioButtonClicked)
+        Tuning_drawlines_groupBox_layout.addWidget(self.Tuning_drawlines_yes)
+        Tuning_drawlines_groupBox_layout.addWidget(self.Tuning_drawlines_no)
+        Tuning_drawlines_groupBox.setLayout(Tuning_drawlines_groupBox_layout)
+        TUNING.addWidget(Tuning_drawlines_groupBox)
 
         TUNING.addWidget(self.resultDisplay)
 ######기본값 linedeit에 입력
@@ -381,6 +405,14 @@ class MyWindow(QWidget):
         except:
             print('invalid input')
 
+    def divider_changed(self):
+        try:
+            a = self.divider_input.text()
+            print(self.divider_input.text())
+            self.divider =int(a)
+            print(self.divider)
+        except:
+            print('invalid input')
 
     def pushButtonClicked(self):
         #if sum(self.data['cannon'].cannon_z >= self.data['balloon'].balloon_z ) > 0:
@@ -388,7 +420,7 @@ class MyWindow(QWidget):
         #else:
         self.ax.clear(); self.resultDisplay.setPlainText('')
         per, idland, actland, d_wind, total_moves = sb.drawplot(self.n_iter, self.data['cannon'], self.data['balloon'], self.data['wind'], self.ax, 
-                    beta_1 = self.beta_1, beta_2 = self.beta_2)
+                    drawlines = self.drawlines, beta_1 = self.beta_1, beta_2 = self.beta_2, divider = self.divider)
         #for i in range(len(per)):
         for i, alloc in enumerate(per):
             exec('self.idland_{}.setText("{}")'.format(i, idland[i].round(2)))
@@ -413,7 +445,14 @@ class MyWindow(QWidget):
         except:
             print('입력이 없음')
 
-  
+
+    def radioButtonClicked(self):
+        msg = ""
+        if self.Tuning_drawlines_yes.isChecked():
+            self.drawlines = True
+        else:
+            self.drawlines = False
+     
 
 
 if __name__ == "__main__":

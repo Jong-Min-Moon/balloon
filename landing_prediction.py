@@ -131,7 +131,13 @@ class MyWindow(QWidget):
             exec("self.wind_vel_list['self.wind_vel_{}'] = self.wind_vel_{}".format(i,i))
             exec('setQlineEditLength(self.wind_vel_{}, 4.4)'.format(i))
             exec('self.wind_vel_{}.setValidator(self.int_only)'.format(i))
-        
+
+        for widget in self.wind_vel_list:
+            inputs = widget.replace('self.', '').split('_')
+            i = int(inputs[2])
+            mat = self.data[inputs[0]]
+            self.wind_vel_list[widget].textChanged.connect(lambda a = widget, this_widget = self.wind_vel_list[widget], this_i = i,  this_mat = mat: self.lineEditChanged2(this_widget, this_i, 1, this_mat ))
+                 
         #대포 - 풍선 매칭
         for i in range(n_cannons):
             exec('self.cannon_alloc_{} = QLabel("적 고사총 기지 {}")'.format(i, i+1))
@@ -372,7 +378,10 @@ class MyWindow(QWidget):
         #if sum(self.data['cannon'].cannon_z >= self.data['balloon'].balloon_z ) > 0:
             #QMessageBox.about(self, "오류", "포의 고도가 풍선의 고도보다 높거나 같으면 발사할 수 없습니다")
         #else:
-        self.ax.clear(); self.ax.axis('off')
+        self.ax.clear()
+        self.ax.axis('off')
+        plt.xticks([]); plt.yticks([])
+        self.fig.tight_layout()
         per, idland, actland = sb.drawplot(50, self.data['cannon'], self.data['balloon'], self.data['wind'], self.ax)
         #for i in range(len(per)):
         for i, alloc in enumerate(per):
@@ -398,6 +407,7 @@ class MyWindow(QWidget):
     def lineEditChanged2(self, widget, i, j, mat): #lineEdit위젯에 입력한 바람 값이 바뀔 경우 내부의 데이터프레임에서 즉시 반영하는 함수. 
         try:
             mat.iloc[i,j] = int(widget.text())
+            print(mat)
         except:
             print('입력이 없음')
 

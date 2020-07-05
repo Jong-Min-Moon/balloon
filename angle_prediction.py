@@ -6,7 +6,6 @@ from PyQt5.QtCore import QRegExp
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import shoot_balloon as sb
-import predict_angle_algorithm as pa
 import pandas as pd
 import numpy as np
 from numpy import linalg as la
@@ -30,8 +29,9 @@ class MyWindow(QWidget):
         self.setWindowIcon(QIcon('icon.png'))
         
         #initialize data matrix
-        self.wind_dir = pd.DataFrame({'wind_dir': list(range(6400)) ,
-            'vec': [np.dot(sb.rotate_matrix( i * np.pi / 6400), np.array([0,1]))for i in range(6400)] })
+        self.wind_dir = pd.DataFrame({'wind_dir': [0] + list(range(1, 6400)[::-1]) ,
+            'vec': [np.dot(sb.rotate_matrix( i * np.pi / 3200), np.array([0,1])) for i in range(6400)] })#남풍을 0으로 하여 바람 방향을 6400개로 나누고 각 방향의 unit vector를 저장
+
         self.int_input_widgets = {'cannon_z' : n_cannons, 'K6_z' : n_K6s}
         self.MGRS_input_widgets = {'cannon_x' : n_cannons, 'cannon_y':n_cannons, 'K6_x':n_K6s, 'K6_y':n_K6s}
         self.data = {}
@@ -370,10 +370,17 @@ class MyWindow(QWidget):
         #if sum(self.data['cannon'].cannon_z >= self.data['K6'].K6_z ) > 0:
             #QMessageBox.about(self, "오류", "포의 고도가 풍선의 고도보다 높거나 같으면 발사할 수 없습니다")
         #else:
-        wind_tbl = pd.merge(self.data['wind'], self.wind_dir, how = 'left', on = 'wind_dir').set_index(self.data['wind'].index)
+
+        #그래프 축 제거 및 여백 정리
         self.ax.clear()
         self.ax.axis('off')
-        per, idland, actland = pa.drawplot(100,  self.data['K6'], self.data['cannon'],self.data['wind'], self.ax)
+        plt.xticks([]); plt.yticks([])
+        self.fig.tight_layout()
+
+        wind_tbl = pd.merge(self.data['wind'], self.wind_dir, how = 'left', on = 'wind_dir').set_index(self.data['wind'].index)
+
+        per = sb.allocate(self.data['K6'], self.data['cannon'])
+        sb.draw_ideal(per, self.data['K6'], self.data['cannon'], self.ax)
 
 
 
@@ -387,7 +394,6 @@ class MyWindow(QWidget):
 
 
             direc_init = (enemy[:2] - cannon[:2]) / la.norm(enemy[:2] - cannon[:2])
-            #land = sb.optim(100, 45, direc_init, cannon, enemy, wind_tbl )
 
             under = la.norm(cannon[:2]- enemy[:2])
 
@@ -404,15 +410,10 @@ class MyWindow(QWidget):
                 x[2]
             def constr4(x):
                 90 - x[2]
-            minimum = fmin_cobyla(f, [theta_init, direc_init[0], direc_init[1]], [constr1, constr2, constr3, constr4], rhoend=1e-7)
-            print(minimum[1:])
-            exec('self.idland_{}.setText(str(    int(round(    minimum[0] * 6400 / 360  , 0))  ))'.format(i))
-            exec('self.actland_{}.setText(str( pa.vec2mil(minimum[1:]) ))'.format(i))
-        self.ax.scatter(610,6400, color = 'red', s = 300); self.ax.text(610,6400, 'enemy')
-        self.ax.scatter(3350,8000, color = 'red', s = 300); self.ax.text(3350,8000, 'enemy')
-        self.ax.scatter(4900,7700, color = 'red', s = 300); self.ax.text(4900,7700, 'enemy')
-        self.ax.scatter(6700,8000, color = 'red', s = 300); self.ax.text(6700,8000, 'enemy')
-        self.ax.scatter(8400,7200, color = 'red', s = 300); self.ax.text(8400,7200, 'enemy')
+            #minimum = fmin_cobyla(f, [theta_init, direc_init[0], direc_init[1]], [constr1, constr2, constr3, constr4], rhoend=1e-7)
+            #exec('self.idland_{}.setText(str(    int(round(    minimum[0] * 6400 / 360  , 0))  ))'.format(i))
+            #exec('self.actland_{}.setText(str( sb.vec2mil(minimum[1:]) ))'.format(i))
+
 
         img = plt.imread("map.png")
         limit = list(self.ax.get_xlim()) + list(self.ax.get_ylim())
