@@ -5,7 +5,7 @@ from PyQt5.QtCore import QRegExp
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import shoot_balloon as sb
+import algorithm as alg
 import pandas as pd
 import numpy as np
 from numpy import linalg as la
@@ -30,7 +30,7 @@ class MyWindow(QWidget):
         
         #initialize data matrix
         self.wind_dir = pd.DataFrame({'wind_dir': [0] + list(range(1, 6400)[::-1]) ,
-            'vec': [np.dot(sb.rotate_matrix( i * np.pi / 3200), np.array([0,1])) for i in range(6400)] })#남풍을 0으로 하여 바람 방향을 6400개로 나누고 각 방향의 unit vector를 저장
+            'vec': [np.dot(alg.rotate_matrix( i * np.pi / 3200), np.array([0,1])) for i in range(6400)] })#남풍을 0으로 하여 바람 방향을 6400개로 나누고 각 방향의 unit vector를 저장
 
         self.int_input_widgets = {'cannon_z' : n_cannons, 'K6_z' : n_K6s}
         self.MGRS_input_widgets = {'cannon_x' : n_cannons, 'cannon_y':n_cannons, 'K6_x':n_K6s, 'K6_y':n_K6s}
@@ -379,8 +379,8 @@ class MyWindow(QWidget):
 
         wind_tbl = pd.merge(self.data['wind'], self.wind_dir, how = 'left', on = 'wind_dir').set_index(self.data['wind'].index)
 
-        per = sb.allocate(self.data['K6'], self.data['cannon'])
-        sb.draw_ideal(per, self.data['K6'], self.data['cannon'], self.ax)
+        per = alg.allocate(self.data['K6'], self.data['cannon'])
+        alg.draw_ideal(per, self.data['K6'], self.data['cannon'], self.ax)
 
 
 
@@ -401,7 +401,7 @@ class MyWindow(QWidget):
             theta_init = under * (9 / 1000)
                     
             def f(x):
-                return sb.optim(100, x[0], np.array([x[1],x[2]]), cannon, enemy, wind_tbl)
+                return alg.optim(100, x[0], np.array([x[1],x[2]]), cannon, enemy, wind_tbl)
             def constr1(x):
                 x[1]
             def constr2(x):
@@ -412,7 +412,7 @@ class MyWindow(QWidget):
                 90 - x[2]
             #minimum = fmin_cobyla(f, [theta_init, direc_init[0], direc_init[1]], [constr1, constr2, constr3, constr4], rhoend=1e-7)
             #exec('self.idland_{}.setText(str(    int(round(    minimum[0] * 6400 / 360  , 0))  ))'.format(i))
-            #exec('self.actland_{}.setText(str( sb.vec2mil(minimum[1:]) ))'.format(i))
+            #exec('self.actland_{}.setText(str( alg.vec2mil(minimum[1:]) ))'.format(i))
 
 
         img = plt.imread("map.png")
@@ -421,7 +421,7 @@ class MyWindow(QWidget):
         
         
         #사거리 내의 적 고사포에 점선을 연결해 주기
-        available = sb.allocate2(self.data['K6'], self.data['cannon'])
+        available = alg.allocate2(self.data['K6'], self.data['cannon'])
         for i, alist in enumerate(available):
             print(alist)
             for aenemy in alist:

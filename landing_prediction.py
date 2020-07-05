@@ -15,7 +15,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import qtmodern.styles
 import qtmodern.windows
 
-import shoot_balloon as sb #낙탄지점 예측 알고리즘이 들어있는 코드
+import algorithm as alg #낙탄지점 예측 알고리즘이 들어있는 코드
 
 #상황 설정
 n_cannons = 5 #적 고사포의 개수
@@ -378,17 +378,21 @@ class MyWindow(QWidget):
         #if sum(self.data['cannon'].cannon_z >= self.data['balloon'].balloon_z ) > 0:
             #QMessageBox.about(self, "오류", "포의 고도가 풍선의 고도보다 높거나 같으면 발사할 수 없습니다")
         #else:
+
         self.ax.clear()
         self.ax.axis('off')
         plt.xticks([]); plt.yticks([])
         self.fig.tight_layout()
-        per, idland, actland = sb.drawplot(50, self.data['cannon'], self.data['balloon'], self.data['wind'], self.ax)
+
+        per, idland, actland = alg.drawplot(50, self.data['cannon'], self.data['balloon'], self.data['wind'], self.ax)
+
+
         #for i in range(len(per)):
         for i, alloc in enumerate(per):
 
             exec('self.balloon_alloc_{}.setText("풍선 {}")'.format(i, alloc + 1))
-            exec('self.idland_{}.setText("{}")'.format(i, sb.five_digits(idland[i])))
-            exec('self.actland_{}.setText("{}")'.format(i, sb.five_digits(actland[i])))
+            exec('self.idland_{}.setText("{}")'.format(i, alg.five_digits(idland[i])))
+            exec('self.actland_{}.setText("{}")'.format(i, alg.five_digits(actland[i])))
         img = plt.imread("map.png")
         limit = list(self.ax.get_xlim()) + list(self.ax.get_ylim())
         self.ax.imshow(img, extent=limit)   

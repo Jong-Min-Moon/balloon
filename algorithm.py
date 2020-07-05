@@ -190,17 +190,14 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
         #total_move = 0
         while idx_now > 0:
             h_down = h_now - wind_h[idx_now - 1] #수직 하강 거리
-            #print('고도 {} -> {}. {}만큼 하강하는 동안'.format(h_now, wind_h[idx_now - 1], h_down))
 
             one_step_old = h_down * atan #전진 거리. 풍향의 영향이 없을 때의 방향을 기준으로 거리를 계산함
-            #total_move += one_step
-            #print('x,y좌표 기준으로 {}만큼 전진'.format(one_step))
+      
 
             wind_vec = np.array(wind_tbl.vec[idx_now-1])
             wind_vel = wind_tbl.wind_vel[idx_now-1]
             interval_now = wind_tbl.index[idx_now - 1]
-            #print('고도 {} in 구간 {}에서의 바람 방향: {}'.format(wind_h[idx_now], interval_now, wind_vec))
-            #print('원래 전진 방향: {}'.format(direc_now))
+
             
             cossim = cos_sim(direc_now, wind_vec)
             rbeta = np.random.beta(3,8)
@@ -212,23 +209,18 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
                 w = ( 1 + (wind_vel / 60 * cossim) )  * rbeta / 4
                 direc_now = (1-w) * direc_now + w * wind_vec.astype('float64')
                 direc_now =  (direc_now ) / la.norm(direc_now) #unit vector로 만들기
-                #print('바람에 의해 수정된 방향: {}'.format(direc_now))  
-            #else:
-                #print('바람의 방향이 포탄의 방향과 정확히 일치(혹은 정확히 반대)하므로, 포탄 진행방향 변화 없음. 속도만 수정')
-
+  
 
                 
             #계산 종료.
 
             #포탄의 전진.
             xy_now = xy_now + direc_now * one_step
-            #x_shootline.append(xy_now[0]); y_shootline.append(xy_now[1])  #peak에서 착탄까지 경로 저장
-            #print('{},{}에 도착\n'.format(xy_now, wind_h[idx_now - 1]))
+
             
             idx_now -=1
             h_now = wind_h[idx_now]
-            #print(xy_now)
-        #print(x_shootline)
+
         
         x_values.append(xy_now[0])
         y_values.append(xy_now[1])
@@ -236,7 +228,6 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
         
         ax.scatter(xy_now[0], xy_now[1], s = 0.5 , color = bullet_col) #착탄지점 그래프에 그리기
         
-    #print('실제로 총 {}만큼 전진'.format(total_move))
 
     cir = sc.make_circle(zip(x_values, y_values))
     ax.text(cir[0], cir[1], 'center') #최고점
@@ -249,6 +240,83 @@ def shoot(n_iter, cannon, balloon, wind_tbl, ax, col_id):
   
     return idland, np.array([cir[0], cir[1]])
 
+
+#########
+def shoot(n_iter, cannon, balloon, wind_tbl):
+    #고사포에서 풍선을 향해 포탄을 여러 발 발사했을 때 바람의 영향을 고려한 낙탄점들과 그 중심점을 계산하는 함수
+    #input: 1이상의 정수(발사 횟수),
+    #       3차원 array(고사포의 좌표),
+    #       3차원 array(풍선의 좌표),
+    #       행이 고도, 열이 바람의 방향 벡터와 풍속인 DataFrame
+ 
+    x_values = []; y_values = [] #낙탄지점 저장소
+    
+    #발사 횟수만큼 반복:
+    for i in range(n_iter):
+        np.random.seed(i) #재현가능성을 위해 random number의 seed를 발사 순서로 정함
+        idland, xy_now, peak_z, degree, direc_now, d_wind = peak_xy(cannon, balloon) #고사포와 풍선의 좌표로부터 이론적 낙탄지점과 포탄 최고점, 발사각과 발사방향
+        atan = d_wind / peak_z
+
+        wind_h = [idx[1] for idx in wind_tbl.index]; wind_h.insert(0,0) #현재 고도보다 바로 위에 있는 테이블 값의 풍향을 사용
+        idx_now = (wind_h >= peak_z).tolist().index(True)
+        h_now = peak_z
+
+        #바람의 영향을 받으며 낙하     
+        while idx_now > 0:
+            h_down = h_now - wind_h[idx_now - 1] #수직 하강 거리
+            one_step_old = h_down * atan #전진 거리. 풍향의 영향이 없을 때의 방향을 기준으로 거리를 계산함
+      
+            wind_vec = np.array(wind_tbl.vec[idx_now-1]); wind_vel = wind_tbl.wind_vel[idx_now-1]
+            interval_now = wind_tbl.index[idx_now - 1]
+
+            cossim = cos_sim(direc_now, wind_vec)
+            rbeta = np.random.beta(3,8)
+            one_step = one_step_old * ( 1 + (wind_vel / 60 * cossim * (1 + rbeta)) )  #전진거리 수정
+            if abs(cossim) != 1:
+                #풍향과 풍속을 고려하여 방향 수정
+                w = ( 1 + (wind_vel / 60 * cossim) )  * rbeta / 4
+                direc_now = (1-w) * direc_now + w * wind_vec.astype('float64')
+                direc_now =  (direc_now ) / la.norm(direc_now) #unit vector로 만들기
+            
+            xy_now = xy_now + direc_now * one_step#포탄의 전진.
+
+            idx_now -=1; h_now = wind_h[idx_now] #다음 스텝 준비
+
+        
+        x_values.append(xy_now[0])
+        y_values.append(xy_now[1])
+    
+    cir = sc.make_circle(zip(x_values, y_values))#착탄점을 포함하는 최소크기 원의 중심점 계산
+
+    return x_values, y_values, idland, np.array([cir[0], cir[1]]), cir[2]
+
+
+def draw_basic(cannon, balloon, ax, col_id):
+    enemy_col = enemy_col_list[col_id] #적 고사포 색상
+    bullet_col = bullet_col_list[col_id]
+
+    idland, xy_now, peak_z, degree, direc_now, d_wind = peak_xy(cannon, balloon)
+    ax.scatter(cannon[0], cannon[1], color = enemy_col); ax.text(cannon[0], cannon[1], 'fire') #고사포의 위치를 그래프에 기록
+    ax.scatter(balloon[0], balloon[1], color = 'royalblue', s = 300); ax.text(balloon[0], balloon[1], 'balloon') #풍선의 위치를 그래프에 기록
+    ax.scatter(idland[0], idland[1], s = 40, alpha = 0.7, color = bullet_col); ax.text(idland[0], idland[1], 'theoretical') 
+    ax.plot( [cannon[0], balloon[0]], [cannon[1], balloon[1]], color = bullet_col) #cannon to balloon
+    ax.plot( [balloon[0], xy_now[0]], [balloon[1], xy_now[1]], color = bullet_col) #baloon to peak
+    ax.plot( [xy_now[0], idland[0]], [xy_now[1], idland[1]], linestyle = '--', color = bullet_col) #peak to ideal landing
+
+def draw_landing(x_values, y_values, this_actland, r, ax, col_id):
+    bullet_col = bullet_col_list[col_id]
+    ax.text(this_actland[0], this_actland[1], 'center') #최고점
+    ax.add_patch( patches.Circle( (this_actland[0], this_actland[1]), # (x, y)
+                                            r, # radius
+        alpha=0.35, 
+        facecolor=bullet_col, 
+        linewidth=2, 
+        linestyle='solid'))
+    for i in range(len(x_values)):
+        ax.scatter(x_values[i], y_values[i], s = 0.5 , color = bullet_col) #착탄지점 그래프에 그리기
+
+
+
 def optim(n_points, degree, v, cannon, enemy, wind_tbl):
     center = shoot_for_optim(n_points, cannon, enemy, degree, v, wind_tbl)
     return la.norm(center - enemy[:2])
@@ -258,17 +326,17 @@ def optim(n_points, degree, v, cannon, enemy, wind_tbl):
 def drawplot(n_iter, cannons, balloons, winds, ax):
     
     wind_tbl = pd.merge(winds, wind_dir, how = 'left', on = 'wind_dir').set_index(winds.index)
-    print(wind_tbl)
+ 
 
     idland = []; actland = []
     per = allocate(cannons, balloons)
-    #print(list(zip(range(len(cannons)), per)))
     for i, comb in enumerate(zip(range(len(cannons)), per)):
-        # print('{}번째 발사. 포탄과 풍선 조합: {}'.format(i, comb))
-        # print('1', cannons.iloc[comb[0], :])
-        # print('2', balloons.iloc[comb[1], :])
-        this_idland, this_actland = shoot( n_iter,  np.array(cannons.iloc[comb[0], :]), np.array(balloons.iloc[comb[1], :]), wind_tbl,  ax, i)
+        cannon = np.array(cannons.iloc[comb[0], :])
+        balloon = np.array(balloons.iloc[comb[1], :])  
+        draw_basic(cannon, balloon, ax, i) 
+        x_values, y_values, this_idland, this_actland, r = shoot( n_iter, cannon, balloon, wind_tbl)
         idland.append(this_idland); actland.append(this_actland)
+        draw_landing(x_values, y_values, this_actland, r, ax, i)
     return per, idland, actland
 
 
