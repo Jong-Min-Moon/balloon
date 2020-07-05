@@ -202,8 +202,8 @@ class MyWindow(QWidget):
         ##########################################################
         #left layout : 그림이 나오는 곳
 
-        # R_G4: 발사 결과
-        R_G4 = QGroupBox('발사 결과', self)  
+        # R_G4: 계산 결과
+        R_G4 = QGroupBox('계산 결과', self)  
         R_G4_box = QHBoxLayout()
 
         R_G4_box_G1 = QGroupBox('아군 K6 - 적 고사총 기지 매칭', self)
@@ -378,7 +378,7 @@ class MyWindow(QWidget):
         self.fig.tight_layout()
 
         wind_tbl = pd.merge(self.data['wind'], self.wind_dir, how = 'left', on = 'wind_dir').set_index(self.data['wind'].index)
-
+        print(wind_tbl)
         per = alg.allocate(self.data['K6'], self.data['cannon'])
         alg.draw_ideal(per, self.data['K6'], self.data['cannon'], self.ax)
 
@@ -410,10 +410,15 @@ class MyWindow(QWidget):
                 x[2]
             def constr4(x):
                 90 - x[2]
-            #minimum = fmin_cobyla(f, [theta_init, direc_init[0], direc_init[1]], [constr1, constr2, constr3, constr4], rhoend=1e-7)
-            #exec('self.idland_{}.setText(str(    int(round(    minimum[0] * 6400 / 360  , 0))  ))'.format(i))
-            #exec('self.actland_{}.setText(str( alg.vec2mil(minimum[1:]) ))'.format(i))
-
+            minimum = fmin_cobyla(f, [theta_init, direc_init[0], direc_init[1]], [constr1, constr2, constr3, constr4], rhoend=1e-7)
+            exec('self.idland_{}.setText(str(    int(round(    minimum[0] * 6400 / 360  , 0))  ))'.format(i))
+            exec('self.actland_{}.setText(str( alg.vec2mil(minimum[1:]) ))'.format(i))
+            
+            #확인용
+            # x_values, y_values, this_actland, r = alg.shoot_for_optim(100 , cannon, enemy, minimum[0], np.array(minimum[1:]), wind_tbl)
+            # print(r)
+            # alg.draw_by_angle(cannon, minimum[0], np.array(minimum[1:]), self.ax, i)
+            # alg.draw_landing(x_values, y_values, this_actland, r, self.ax, (i+1) /len(per) )
 
         img = plt.imread("map.png")
         limit = list(self.ax.get_xlim()) + list(self.ax.get_ylim())
@@ -441,6 +446,7 @@ class MyWindow(QWidget):
     def lineEditChanged2(self, widget, i, j, mat):
         try:
             mat.iloc[i,j] = int(widget.text())
+            print(mat)
         except:
             print('입력이 없음')
 
