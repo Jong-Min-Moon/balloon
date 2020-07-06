@@ -185,7 +185,7 @@ def shoot(n_iter, cannon, balloon, wind_tbl):
             one_step = one_step_old * ( 1 + (wind_vel / 60 * cossim * (1 + rbeta)) )  #전진거리 수정
             if abs(cossim) != 1:
                 #풍향과 풍속을 고려하여 방향 수정
-                w = ( 1 + (wind_vel / 60 * cossim) )  * rbeta / 4
+                w = ( 1 + (wind_vel / 60 * cossim) )  * rbeta / 2.5
                 direc_now = (1-w) * direc_now + w * wind_vec.astype('float64')
                 direc_now =  (direc_now ) / la.norm(direc_now) #unit vector로 만들기
             
@@ -294,7 +294,7 @@ def shoot_for_optim(n_points, cannon, enemy, degree, direc, wind_tbl):
             one_step = one_step_old * ( 1 + (wind_vel / 60 * cossim * (1 + rbeta)) )  #전진거리 수정
             if abs(cossim) != 1:
                 #풍향과 풍속을 고려하여 방향 수정
-                w = ( 1 + (wind_vel / 60 * cossim) )  * rbeta / 4
+                w = ( 1 + (wind_vel / 60 * cossim) )  * rbeta / 2.5
                 direc_now = (1-w) * direc_now + w * wind_vec.astype('float64')
                 direc_now =  (direc_now ) / la.norm(direc_now) #unit vector로 만들기
             
