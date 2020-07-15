@@ -234,24 +234,17 @@ def COBYLA(cannon, enemy, wind_tbl):
     under = la.norm(cannon[:2]- enemy[:2])
     theta_init = under * (9 / 1000)
     init_val = [theta_init, direc_init[0], direc_init[1]]
-    def f(x):
-        return optim(100, x[0], np.array([x[1],x[2]]), cannon, enemy, wind_tbl)
-    def constr1(x):
-        x[1]
-    def constr2(x):
-        90 - x[1]
-    def constr3(x):
-        x[2]
-    def constr4(x):
-        90 - x[2]
+    print('init:', init_val)
 
-    cons = ({'type': 'ineq', 'fun': constr1},
-            {'type': 'ineq', 'fun': constr2},
-            {'type': 'ineq', 'fun': constr3},
-            {'type': 'ineq', 'fun': constr4}
-            )
-
-    res = minimize(f, init_val, method = 'COBYLA', constraints=cons)
+    res = minimize(lambda x : optim(100, x[0], np.array([x[1],x[2]]), cannon, enemy, wind_tbl),#목적함수
+                    init_val, #초기값
+                    method = 'COBYLA', #Constrained Optimization BY Linear Approximation 알고리즘 사용
+                    constraints = (
+                        {'type': 'ineq', 'fun': lambda x : x[0]}, #제약식 1: 사각은 0 이상
+                        {'type': 'ineq', 'fun': lambda x : 90 - x[0]} #제약식 2: 사각은 90 이하
+                    )
+                    )
+    print(res)
     return res.x
 
 
@@ -366,22 +359,3 @@ def draw_ideal(per, K6s, enemies, ax):
         
         ax.scatter(K6[0], K6[1], color = 'royalblue', s=300); ax.text(K6[0], K6[1], 'K-6') #아군 K-6 위치를 파란색 원으로 그림에 표시
         ax.plot( [K6[0], enemy[0]], [K6[1], enemy[1]], color ='royalblue') #아군 K-6에서 적 고사포까지의 궤적을 파란색 선으로 표시
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
