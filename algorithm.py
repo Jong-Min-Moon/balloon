@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from itertools import permutations
 import smallestenclosingcircle as sc
+from scipy.optimize import minimize
 
 enemy_col_list = ['indianred', 'firebrick', 'maroon', 'red', 'crimson' , 'orangered', 'tab:brown', 'tab:pink'] #그래프 그릴 때 사용할 색상의 목록.
 bullet_col_list = ['#F9A602', '#FCE205', '#F8DE7E', '#C49102', '#FCD12A']
@@ -226,6 +227,32 @@ def draw_landing(x_values, y_values, this_actland, r, ax, col_id):
     for i in range(len(x_values)):
         ax.scatter(x_values[i], y_values[i], s = 0.5 ,color = plt.cm.Wistia(col_id)) #착탄지점 그래프에 그리기
 
+
+
+def COBYLA(cannon, enemy, wind_tbl):
+    direc_init = (enemy[:2] - cannon[:2]) / la.norm(enemy[:2] - cannon[:2])
+    under = la.norm(cannon[:2]- enemy[:2])
+    theta_init = under * (9 / 1000)
+    init_val = [theta_init, direc_init[0], direc_init[1]]
+    def f(x):
+        return optim(100, x[0], np.array([x[1],x[2]]), cannon, enemy, wind_tbl)
+    def constr1(x):
+        x[1]
+    def constr2(x):
+        90 - x[1]
+    def constr3(x):
+        x[2]
+    def constr4(x):
+        90 - x[2]
+
+    cons = ({'type': 'ineq', 'fun': constr1},
+            {'type': 'ineq', 'fun': constr2},
+            {'type': 'ineq', 'fun': constr3},
+            {'type': 'ineq', 'fun': constr4}
+            )
+
+    res = minimize(f, init_val, method = 'COBYLA', constraints=cons)
+    return res.x
 
 
 def optim(n_points, degree, v, cannon, enemy, wind_tbl):
