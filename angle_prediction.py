@@ -390,27 +390,7 @@ class MyWindow(QWidget):
             enemy = np.array(self.data['cannon'].iloc[alloc, :])
 
 
-        
-
-
-            direc_init = (enemy[:2] - cannon[:2]) / la.norm(enemy[:2] - cannon[:2])
-
-            under = la.norm(cannon[:2]- enemy[:2])
-
-
-            theta_init = under * (9 / 1000)
-                    
-            def f(x):
-                return alg.optim(100, x[0], np.array([x[1],x[2]]), cannon, enemy, wind_tbl)
-            def constr1(x):
-                x[1]
-            def constr2(x):
-                90 - x[1]
-            def constr3(x):
-                x[2]
-            def constr4(x):
-                90 - x[2]
-            minimum = fmin_cobyla(f, [theta_init, direc_init[0], direc_init[1]], [constr1, constr2, constr3, constr4], rhoend=1e-7)
+            minimum = alg.COBYLA(cannon, enemy, wind_tbl)
             exec('self.idland_{}.setText(str(    int(round(    minimum[0] * 6400 / 360  , 0))  ))'.format(i))
             exec('self.actland_{}.setText(str( alg.vec2mil(minimum[1:]) ))'.format(i))
             
